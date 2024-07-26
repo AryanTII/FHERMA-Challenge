@@ -67,27 +67,27 @@
 
 // }
 
-vector<Ciphertext<DCRTPoly>> encrypt_and_serialize_plaintext(
-    CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> keys, 
-    vector<Plaintext> plaintexts, vector<double> input){
-    vector<Ciphertext<DCRTPoly>> ciphertexts;
+// vector<Ciphertext<DCRTPoly>> encrypt_and_serialize_plaintext(
+//     CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> keys, 
+//     vector<Plaintext> plaintexts, vector<double> input){
+//     vector<Ciphertext<DCRTPoly>> ciphertexts;
     
-    for (auto &val : input) {
-        vector<double> vec = {val};  // Create a vector from the value
-        Plaintext p = cc->MakeCKKSPackedPlaintext(vec);
-        plaintexts.push_back(p);
-        ciphertexts.push_back(cc->Encrypt(keys.publicKey, p));
-    }
+//     for (auto &val : input) {
+//         vector<double> vec = {val};  // Create a vector from the value
+//         Plaintext p = cc->MakeCKKSPackedPlaintext(vec);
+//         plaintexts.push_back(p);
+//         ciphertexts.push_back(cc->Encrypt(keys.publicKey, p));
+//     }
 
-    // // Serialize input
-    if (!Serial::SerializeToFile(inputLocation, ciphertexts, SerType::BINARY)) {
-        std::cerr << "Error serializing public key to public_key.txt." << std::endl;
-        std::exit(1);
-    }
+//     // // Serialize input
+//     if (!Serial::SerializeToFile(inputLocation, ciphertexts, SerType::BINARY)) {
+//         std::cerr << "Error serializing public key to public_key.txt." << std::endl;
+//         std::exit(1);
+//     }
 
 
-    return ciphertexts;
-}
+//     return ciphertexts;
+// }
 
 void serialize_keys(CryptoContext<DCRTPoly> cc){
 

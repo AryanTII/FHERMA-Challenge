@@ -70,8 +70,7 @@ void SortCKKS::eval(){
 
 void SortCKKS::deserializeOutput(){
 
-    // if (!Serial::SerializeToFile(m_OutputLocation, m_OutputC, SerType::BINARY)) //To be fixed
-    if (!Serial::SerializeToFile(m_OutputLocation, m_InputC, SerType::BINARY))
+    if (!Serial::SerializeToFile(m_OutputLocation, m_OutputC, SerType::BINARY))
     {
         std::cerr << " Could not serialize output ciphertext" << std::endl;
     }

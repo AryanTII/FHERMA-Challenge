@@ -10,7 +10,7 @@ using namespace std;
 class SortCKKS {
     CryptoContext<DCRTPoly> m_cc;
     PublicKey<DCRTPoly> m_PublicKey;
-    vector<Ciphertext<DCRTPoly>> m_InputC;
+    Ciphertext<DCRTPoly> m_InputC;
     Ciphertext<DCRTPoly> m_OutputC;
     string m_PubKeyLocation;
     string m_MultKeyLocation;

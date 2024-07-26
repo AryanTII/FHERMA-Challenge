@@ -28,10 +28,14 @@ int main() {
     // Input Vector
     vector<double> input = {3.0, 1.0, 4.0, 1.5, 5.0, 9.0, 2.0, 6.0};
 
-    vector<Plaintext> plaintexts;
-    vector<Ciphertext<DCRTPoly>> ciphertexts;
+    Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input);
+    Ciphertext<DCRTPoly> ciphertext = cc->Encrypt(keys.publicKey, plaintext);
 
-    ciphertexts = encrypt_and_serialize_plaintext(cc, keys, plaintexts, input);
+    // // Serialize input
+    if (!Serial::SerializeToFile(inputLocation, ciphertext, SerType::BINARY)) {
+        std::cerr << "Error serializing input file" << std::endl;
+        std::exit(1);
+    }
     
     std::cout << "KEY GENERATION DONE!" << std::endl;
     // ------------------- Dummy Input for local testing -------------------
