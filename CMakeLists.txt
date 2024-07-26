@@ -28,5 +28,5 @@ else()
     link_libraries( ${OpenFHE_SHARED_LIBRARIES} )
 endif()
 
-add_executable(sort main.cpp helper.h helper.cpp)
-target_link_libraries(sort ${LIBRARIES})
+add_executable(app main.cpp sort_ckks.h sort_ckks.cpp helper.h helper.cpp)
+target_link_libraries(app ${LIBRARIES})

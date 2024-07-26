@@ -3,4 +3,4 @@ rm -rf build/*
 cd build
 cmake ..
 make
-./sort
+./app
