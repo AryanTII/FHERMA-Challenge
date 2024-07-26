@@ -14,12 +14,12 @@ using namespace lbcrypto;
 using namespace std;
 
 // Key location
-static const string pubKeyLocation = "./pub.bin";
-static const string privKeyLocation = "./priv.bin";
-static const string multKeyLocation = "./mult.bin";
-static const string rotKeyLocation = "./rot.bin";
-static const string ccLocation = "./cc.bin";
-static const string inputLocation = "./in.bin";
-static const string outputLocation = "./out.bin";
+static const string pubKeyLocation = "../files/pub.bin";
+static const string privKeyLocation = "../files/priv.bin";
+static const string multKeyLocation = "../files/mult.bin";
+static const string rotKeyLocation = "../files/rot.bin";
+static const string ccLocation = "../files/cc.bin";
+static const string inputLocation = "../files/in.bin";
+static const string outputLocation = "../files/out.bin";
 
 

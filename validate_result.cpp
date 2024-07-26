@@ -1,4 +1,4 @@
-#include "validate_result.h"
+#include "generate_keys.h"
 
 int main() {
 

@@ -9,5 +9,5 @@ if [ "$1" == "1" ]; then
     ./generate_keys
 fi
 
-./app --cc cc.bin --key_public pub.bin --key_mult mult.bin --key_rot rot.bin --array in.bin --output out.bin
+./app --cc ../files/cc.bin --key_public ../files/pub.bin --key_mult ../files/mult.bin --key_rot ../files/rot.bin --array ../files/in.bin --output ../files/out.bin
 ./validate_result
