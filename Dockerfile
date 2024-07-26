@@ -3,9 +3,8 @@ FROM ubuntu:20.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
-
-# Define the number of threads for compilation (though Dockerfile doesn’t need it, just for clarity)
 ENV NO_THREADS=4
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 # Update and install necessary packages
 RUN apt-get update && \
@@ -49,6 +48,9 @@ RUN mkdir -p build && cd build && \
     cmake .. && \
     make -j$(nproc) && \
     make install
+
+# Set the working directory
+WORKDIR /workspace
 
 # Set the default command (you can replace this with any other command you want to run)
 CMD ["bash"]
