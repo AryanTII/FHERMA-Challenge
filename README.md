@@ -13,6 +13,7 @@
     ```
 3. Run the below command in the shell of the above created docker container:
     ```
+    export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
     mkdir build
     ./run.sh
     ```
