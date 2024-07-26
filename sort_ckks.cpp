@@ -16,9 +16,6 @@ SortCKKS::SortCKKS(std::string ccLocation, std::string pubKeyLocation, std::stri
 
 void SortCKKS::initCC(){
 
-    // m_cc->ClearEvalMultKeys();
-    // m_cc->ClearEvalAutomorphismKeys();
-    // CryptoContextFactory<DCRTPoly>::ReleaseAllContexts();
     if (!Serial::DeserializeFromFile(m_CCLocation, m_cc, SerType::BINARY))
     {
         std::cerr << "Could not deserialize cryptocontext file" << std::endl;
@@ -58,7 +55,7 @@ void SortCKKS::initCC(){
 
     if (!Serial::DeserializeFromFile(m_InputLocation, m_InputC, SerType::BINARY))
     {
-        std::cerr << "Could not deserialize cryptocontext file" << std::endl;
+        std::cerr << "Could not deserialize input file" << std::endl;
         std::exit(1);
     }
 }
@@ -67,6 +64,7 @@ void SortCKKS::eval(){
 
     std::cout << "This is the sorting method that needs to be filled" << std::endl;
     std::cout << "The output should be the ciphertext on m_OutputC" << std::endl;
+    std::cout << std::endl;
     
     // To be filled
     m_OutputC = m_InputC;
@@ -79,34 +77,3 @@ void SortCKKS::deserializeOutput(){
         std::cerr << " Could not serialize output ciphertext" << std::endl;
     }
 }
-
-void SortCKKS::viewInputOutput(KeyPair<DCRTPoly> keys, uint32_t batchSize){
-
-    // Decrypt the ciphertexts
-    Plaintext plaintextInput, plaintextOutput;
-    // m_cc->SetPrivateKey(keys.secretKey);
-    m_cc->Decrypt(keys.secretKey, m_InputC, &plaintextInput);
-    m_cc->Decrypt(keys.secretKey, m_OutputC, &plaintextOutput);
-
-    plaintextInput->SetLength(batchSize);
-    plaintextOutput->SetLength(batchSize);
-    
-    std::cout << "Input Plaintext:" << plaintextInput << std::endl;
-    std::cout << "Output Plaintext:" << plaintextOutput << std::endl;
-    std::cout << std::endl;
-}
-
-// void SortCKKS::viewInputOutput(CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> keys, uint32_t batchSize){
-
-//     // Decrypt the ciphertexts
-//     Plaintext plaintextInput, plaintextOutput;
-//     cc->Decrypt(keys.secretKey, m_InputC, &plaintextInput);
-//     cc->Decrypt(keys.secretKey, m_OutputC, &plaintextOutput);
-
-//     plaintextInput->SetLength(batchSize);
-//     plaintextOutput->SetLength(batchSize);
-    
-//     std::cout << "Input Plaintext:" << plaintextInput << std::endl;
-//     std::cout << "Output Plaintext:" << plaintextOutput << std::endl;
-//     std::cout << std::endl;
-// }

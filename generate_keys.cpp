@@ -27,22 +27,27 @@ int main() {
     cc->EvalRotateKeyGen(keys.secretKey, {1, 2, -1, -2});
 
     // Serialize into binary files
-    std::cout << "GENERATING KEYS!" << std::endl;
+    std::cout << "Serializing Relevant Keys and Inputs!" << std::endl;
     
     if (!Serial::SerializeToFile(ccLocation, cc, SerType::BINARY)) {
-        std::cerr << "Error serializing crypto context to cryptoContext.txt." << std::endl;
+        std::cerr << "Error serializing crypto context to cc.bin." << std::endl;
         std::exit(1);
     }
 
     if (!Serial::SerializeToFile(pubKeyLocation, keys.publicKey, SerType::BINARY)) {
-        std::cerr << "Error serializing public key to public_key.txt." << std::endl;
+        std::cerr << "Error serializing public key to pub.bin." << std::endl;
+        std::exit(1);
+    }
+
+    if (!Serial::SerializeToFile(privKeyLocation, keys.secretKey, SerType::BINARY)) {
+        std::cerr << "Error serializing private key to priv.bin." << std::endl;
         std::exit(1);
     }
 
 
     std::ofstream multKeyFile(multKeyLocation, std::ios::out | std::ios::binary);
     if (!cc->SerializeEvalMultKey(multKeyFile, SerType::BINARY)) {
-        std::cerr << "Error serializing evaluation multiplication key to mult_key.txt." << std::endl;
+        std::cerr << "Error serializing evaluation multiplication key to mult.bin." << std::endl;
         std::exit(1);
     }
     multKeyFile.close();
@@ -50,7 +55,7 @@ int main() {
 
     std::ofstream rotKeyFile(rotKeyLocation, std::ios::out | std::ios::binary);
     if (!cc->SerializeEvalAutomorphismKey(rotKeyFile, SerType::BINARY)) {
-        std::cerr << "Error serializing evaluation rotation key to rotKey.txt." << std::endl;
+        std::cerr << "Error serializing evaluation rotation key to rot.bin." << std::endl;
         std::exit(1);
     }
     rotKeyFile.close();
@@ -72,7 +77,7 @@ int main() {
         std::exit(1);
     }
     
-    std::cout << "KEY GENERATION DONE!" << std::endl;
+    std::cout << "Serialization completed successfully!" << std::endl;
 
     return 0;
 }

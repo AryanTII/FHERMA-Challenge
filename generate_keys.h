@@ -15,6 +15,7 @@ using namespace std;
 
 // Key location
 static const string pubKeyLocation = "./pub.bin";
+static const string privKeyLocation = "./priv.bin";
 static const string multKeyLocation = "./mult.bin";
 static const string rotKeyLocation = "./rot.bin";
 static const string ccLocation = "./cc.bin";

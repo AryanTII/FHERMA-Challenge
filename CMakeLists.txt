@@ -33,3 +33,6 @@ target_link_libraries(app ${LIBRARIES})
 
 add_executable(generate_keys generate_keys.cpp generate_keys.h)
 target_link_libraries(generate_keys ${LIBRARIES})
+
+add_executable(validate_result validate_result.cpp validate_result.h)
+target_link_libraries(validate_result ${LIBRARIES})
