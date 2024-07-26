@@ -14,13 +14,11 @@ using namespace lbcrypto;
 using namespace std;
 
 // Key location
-static const string pubKeyLocation = "./key_pub.bin";
-static const string multKeyLocation = "./key_mult.bin";
-static const string rotKeyLocation = "./key_rot.bin";
+static const string pubKeyLocation = "./pub.bin";
+static const string multKeyLocation = "./mult.bin";
+static const string rotKeyLocation = "./rot.bin";
 static const string ccLocation = "./cc.bin";
 static const string inputLocation = "./in.bin";
 static const string outputLocation = "./out.bin";
 
-void serialize_keys(CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> keys);
 
-CryptoContext<DCRTPoly> get_context_ckks();

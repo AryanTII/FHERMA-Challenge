@@ -4,46 +4,37 @@
 #include <vector>
 #include <algorithm>
 
-#include "helper.h"
 #include "sort_ckks.h"
 
 using namespace lbcrypto;
 using namespace std;
 
 
-int main() {
+int main(int argc, char *argv[]) {
+    std::string pubKeyLocation;
+    std::string multKeyLocation;
+    std::string rotKeyLocation;
+    std::string ccLocation;
+    std::string inputLocation;
+    std::string outputLocation;
 
-
-
-    // Generate Crypto Context
-    auto cc = get_context_ckks();
-    // Key generation
-    auto keys = cc->KeyGen();
-    // Serialize into binary files
-    std::cout << "GENERATING KEYS!" << std::endl;
-    serialize_keys(cc, keys);
-
-
-    // ------------------- Dummy Input for local testing -------------------
-    uint32_t batchSize = 8;
-    // Input Vector
-    vector<double> input = {3.0, 1.0, 4.0, 1.5, 5.0, 9.0, 2.0, 6.0};
-
-    Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input);
-    std::cout << "Input vector: " << plaintext << std::endl;
-
-    Ciphertext<DCRTPoly> ciphertext = cc->Encrypt(keys.publicKey, plaintext);
-
-    // // Serialize input
-    if (!Serial::SerializeToFile(inputLocation, ciphertext, SerType::BINARY)) {
-        std::cerr << "Error serializing input file" << std::endl;
-        std::exit(1);
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    for (int i = 1; i < argc; i += 2) {
+        std::string arg = argv[i];
+        if (arg == "--key_public") {
+            pubKeyLocation = argv[i + 1];
+        } else if (arg == "--key_mult") {
+            multKeyLocation = argv[i + 1];
+        } else if (arg == "--key_rot") {
+            rotKeyLocation = argv[i + 1];
+        } else if (arg == "--cc") {
+            ccLocation = argv[i + 1];
+        } else if (arg == "--array") {
+            inputLocation = argv[i + 1];
+        } else if (arg == "--output") {
+            outputLocation = argv[i + 1];
+        }
     }
-    
-    std::cout << "KEY GENERATION DONE!" << std::endl;
-    // ------------------- Dummy Input for local testing -------------------
-
-
 
 
     SortCKKS sortCKKS(ccLocation, pubKeyLocation, multKeyLocation, rotKeyLocation, inputLocation,
@@ -51,9 +42,6 @@ int main() {
               
     sortCKKS.eval();
     sortCKKS.deserializeOutput();
-
-    // sortCKKS.viewInputOutput(cc, keys, batchSize);
-    sortCKKS.viewInputOutput(keys, batchSize);
 
     return 0;
 }

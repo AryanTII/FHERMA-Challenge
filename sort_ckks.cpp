@@ -15,6 +15,10 @@ SortCKKS::SortCKKS(std::string ccLocation, std::string pubKeyLocation, std::stri
 };
 
 void SortCKKS::initCC(){
+
+    // m_cc->ClearEvalMultKeys();
+    // m_cc->ClearEvalAutomorphismKeys();
+    // CryptoContextFactory<DCRTPoly>::ReleaseAllContexts();
     if (!Serial::DeserializeFromFile(m_CCLocation, m_cc, SerType::BINARY))
     {
         std::cerr << "Could not deserialize cryptocontext file" << std::endl;
@@ -80,6 +84,7 @@ void SortCKKS::viewInputOutput(KeyPair<DCRTPoly> keys, uint32_t batchSize){
 
     // Decrypt the ciphertexts
     Plaintext plaintextInput, plaintextOutput;
+    // m_cc->SetPrivateKey(keys.secretKey);
     m_cc->Decrypt(keys.secretKey, m_InputC, &plaintextInput);
     m_cc->Decrypt(keys.secretKey, m_OutputC, &plaintextOutput);
 
