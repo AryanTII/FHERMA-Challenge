@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+# Build
+build/
+files/
+
+# OpenFHE
+openfhe-development/
+openfhe-python/
