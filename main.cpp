@@ -21,7 +21,7 @@ int main() {
     auto keys = cc->KeyGen();
     // Serialize into binary files
     std::cout << "GENERATING KEYS!" << std::endl;
-    serialize_keys(cc);
+    serialize_keys(cc, keys);
 
 
     // ------------------- Dummy Input for local testing -------------------
@@ -52,7 +52,8 @@ int main() {
     sortCKKS.eval();
     sortCKKS.deserializeOutput();
 
-    sortCKKS.viewInputOutput(cc, keys, batchSize);
+    // sortCKKS.viewInputOutput(cc, keys, batchSize);
+    sortCKKS.viewInputOutput(keys, batchSize);
 
     return 0;
 }

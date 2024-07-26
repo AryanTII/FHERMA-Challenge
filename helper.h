@@ -17,10 +17,10 @@ using namespace std;
 static const string pubKeyLocation = "./key_pub.bin";
 static const string multKeyLocation = "./key_mult.bin";
 static const string rotKeyLocation = "./key_rot.bin";
-static const string ccLocation = "./cc.bin";
+static const string ccLocation = "./cc.txt";
 static const string inputLocation = "./in.bin";
 static const string outputLocation = "./out.bin";
 
-void serialize_keys(CryptoContext<DCRTPoly> cc);
+void serialize_keys(CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> keys);
 
 CryptoContext<DCRTPoly> get_context_ckks();

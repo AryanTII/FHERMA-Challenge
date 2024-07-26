@@ -76,12 +76,12 @@ void SortCKKS::deserializeOutput(){
     }
 }
 
-void SortCKKS::viewInputOutput(CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> keys, uint32_t batchSize){
+void SortCKKS::viewInputOutput(KeyPair<DCRTPoly> keys, uint32_t batchSize){
 
     // Decrypt the ciphertexts
     Plaintext plaintextInput, plaintextOutput;
-    cc->Decrypt(keys.secretKey, m_InputC, &plaintextInput);
-    cc->Decrypt(keys.secretKey, m_OutputC, &plaintextOutput);
+    m_cc->Decrypt(keys.secretKey, m_InputC, &plaintextInput);
+    m_cc->Decrypt(keys.secretKey, m_OutputC, &plaintextOutput);
 
     plaintextInput->SetLength(batchSize);
     plaintextOutput->SetLength(batchSize);
@@ -90,3 +90,18 @@ void SortCKKS::viewInputOutput(CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> key
     std::cout << "Output Plaintext:" << plaintextOutput << std::endl;
     std::cout << std::endl;
 }
+
+// void SortCKKS::viewInputOutput(CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> keys, uint32_t batchSize){
+
+//     // Decrypt the ciphertexts
+//     Plaintext plaintextInput, plaintextOutput;
+//     cc->Decrypt(keys.secretKey, m_InputC, &plaintextInput);
+//     cc->Decrypt(keys.secretKey, m_OutputC, &plaintextOutput);
+
+//     plaintextInput->SetLength(batchSize);
+//     plaintextOutput->SetLength(batchSize);
+    
+//     std::cout << "Input Plaintext:" << plaintextInput << std::endl;
+//     std::cout << "Output Plaintext:" << plaintextOutput << std::endl;
+//     std::cout << std::endl;
+// }

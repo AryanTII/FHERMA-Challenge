@@ -1,12 +1,12 @@
 #include "helper.h"
 
-void serialize_keys(CryptoContext<DCRTPoly> cc){
+void serialize_keys(CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> keys){
 
-    auto keys = cc->KeyGen();
-    cc->EvalMultKeyGen(keys.secretKey);
-    cc->EvalAtIndexKeyGen(keys.secretKey, {1});
+    // auto keys = cc->KeyGen();
+    // cc->EvalMultKeyGen(keys.secretKey);
+    // cc->EvalAtIndexKeyGen(keys.secretKey, {1});
 
-    if (!Serial::SerializeToFile("cc.bin", cc, SerType::BINARY)) {
+    if (!Serial::SerializeToFile(ccLocation, cc, SerType::BINARY)) {
         std::cerr << "Error serializing crypto context to cryptoContext.txt." << std::endl;
         std::exit(1);
     }

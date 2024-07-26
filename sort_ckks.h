@@ -27,5 +27,6 @@ public:
     void eval();
     void deserializeOutput();
 
-    void viewInputOutput(CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> keys, uint32_t batchSize);
+    // void viewInputOutput(CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> keys, uint32_t batchSize);
+    void viewInputOutput(KeyPair<DCRTPoly> keys, uint32_t batchSize);
 };
