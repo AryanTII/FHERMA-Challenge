@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  openfhe:
+    build: .
+    container_name: openfhe_container
+    volumes:
+      - ./:/workspace
+    tty: true
