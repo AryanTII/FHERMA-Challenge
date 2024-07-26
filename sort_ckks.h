@@ -26,4 +26,6 @@ public:
     void initCC();
     void eval();
     void deserializeOutput();
+
+    void viewInputOutput(CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> keys, uint32_t batchSize);
 };

@@ -65,7 +65,7 @@ void SortCKKS::eval(){
     std::cout << "The output should be the ciphertext on m_OutputC" << std::endl;
     
     // To be filled
-
+    m_OutputC = m_InputC;
 }
 
 void SortCKKS::deserializeOutput(){
@@ -74,4 +74,19 @@ void SortCKKS::deserializeOutput(){
     {
         std::cerr << " Could not serialize output ciphertext" << std::endl;
     }
+}
+
+void SortCKKS::viewInputOutput(CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> keys, uint32_t batchSize){
+
+    // Decrypt the ciphertexts
+    Plaintext plaintextInput, plaintextOutput;
+    cc->Decrypt(keys.secretKey, m_InputC, &plaintextInput);
+    cc->Decrypt(keys.secretKey, m_OutputC, &plaintextOutput);
+
+    plaintextInput->SetLength(batchSize);
+    plaintextOutput->SetLength(batchSize);
+    
+    std::cout << "Input Plaintext:" << plaintextInput << std::endl;
+    std::cout << "Output Plaintext:" << plaintextOutput << std::endl;
+    std::cout << std::endl;
 }

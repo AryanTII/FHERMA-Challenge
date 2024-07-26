@@ -25,10 +25,13 @@ int main() {
 
 
     // ------------------- Dummy Input for local testing -------------------
+    uint32_t batchSize = 8;
     // Input Vector
     vector<double> input = {3.0, 1.0, 4.0, 1.5, 5.0, 9.0, 2.0, 6.0};
 
     Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input);
+    std::cout << "Input vector: " << plaintext << std::endl;
+
     Ciphertext<DCRTPoly> ciphertext = cc->Encrypt(keys.publicKey, plaintext);
 
     // // Serialize input
@@ -48,6 +51,8 @@ int main() {
               
     sortCKKS.eval();
     sortCKKS.deserializeOutput();
+
+    sortCKKS.viewInputOutput(cc, keys, batchSize);
 
     return 0;
 }

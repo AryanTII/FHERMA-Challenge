@@ -21,27 +21,6 @@ static const string ccLocation = "./cc.bin";
 static const string inputLocation = "./in.bin";
 static const string outputLocation = "./out.bin";
 
-
-// class SortCKKS {
-//     CryptoContext<DCRTPoly> m_cc;
-//     PublicKey<DCRTPoly> m_PublicKey;
-//     Ciphertext<DCRTPoly> m_InputC;
-//     Ciphertext<DCRTPoly> m_OutputC;
-//     string m_PubKeyLocation;
-//     string m_MultKeyLocation;
-//     string m_RotKeyLocation;
-//     string m_CCLocation;
-//     string m_InputLocation;
-//     string m_OutputLocation;
-
-// public:
-//     SortCKKS(string ccLocation, string pubKeyLocation, string multKeyLocation,
-//                 string rotKeyLocation, string inputLocation, string outputLocation);
-
-//     void initCC();
-//     void eval();
-// };
-
-vector<Ciphertext<DCRTPoly>> encrypt_and_serialize_plaintext(CryptoContext<DCRTPoly> cc, KeyPair<DCRTPoly> keys, vector<Plaintext> plaintexts, vector<double> input);
 void serialize_keys(CryptoContext<DCRTPoly> cc);
+
 CryptoContext<DCRTPoly> get_context_ckks();
