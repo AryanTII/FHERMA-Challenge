@@ -58,6 +58,35 @@ void SortCKKS::initCC(){
         std::cerr << "Could not deserialize input file" << std::endl;
         std::exit(1);
     }
+
+    array_limit = 8; //2048
+    // array_limit = m_cc->GetEncodingParams()->GetBatchSize();
+
+    // ------------- Generation of Masks ------------------------------
+    std::vector<double> mask_odd(array_limit);
+    std::vector<double> mask_even(array_limit);
+
+    for (int i = 0; i < array_limit; ++i) {
+        if (i % 2 == 0) {
+            mask_odd[i] = 1.0;
+            mask_even[i] = 0.0;
+        } else {
+            mask_odd[i] = 0.0;
+            mask_even[i] = 1.0;
+        }
+    }
+
+    // vector<double> mask_odd  = {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0};
+    // vector<double> mask_even = {0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
+    m_MaskOdd  = m_cc->MakeCKKSPackedPlaintext(mask_odd);
+    m_MaskEven = m_cc->MakeCKKSPackedPlaintext(mask_even);
+    // ----------------------------------------------------------------
+
+    // std::cout << "Value of n:" << m_cc->GetEncodingParams()->GetBatchSize() << std::endl;
+    // std::cout << "Value of n:" << m_cc.GetRingDim() << std::endl;
+    // std::cout << "Value of n:" << m_cc.GetRingDim() << std::endl;
+
+
 }
 
 void SortCKKS::eval(){
@@ -74,7 +103,7 @@ void SortCKKS::eval(){
     // m_OutputC = temp_cipher*m_InputC;
 
     auto temp_cipherA = compare(m_InputC, m_OutputC);
-    m_OutputC = m_cc->EvalMult(temp_cipherA, m_InputC);
+    m_OutputC = m_cc->EvalMult(m_MaskEven, m_InputC);
 
 }
 

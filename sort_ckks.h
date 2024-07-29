@@ -18,12 +18,15 @@ class SortCKKS {
     PublicKey<DCRTPoly> m_PublicKey;
     Ciphertext<DCRTPoly> m_InputC;
     Ciphertext<DCRTPoly> m_OutputC;
+    Plaintext m_MaskOdd;
+    Plaintext m_MaskEven;
     string m_PubKeyLocation;
     string m_MultKeyLocation;
     string m_RotKeyLocation;
     string m_CCLocation;
     string m_InputLocation;
     string m_OutputLocation;
+    int array_limit;
 
 public:
     SortCKKS(string ccLocation, string pubKeyLocation, string multKeyLocation,

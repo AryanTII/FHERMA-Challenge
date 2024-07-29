@@ -70,6 +70,8 @@ int main() {
     uint32_t batchSize = 8;
     plaintextInput->SetLength(batchSize);
     plaintextOutput->SetLength(batchSize);
+
+    std::cout.precision(2);
     
     std::cout << "Input Plaintext:" << plaintextInput << std::endl;
     std::cout << "Output Plaintext:" << plaintextOutput << std::endl;
