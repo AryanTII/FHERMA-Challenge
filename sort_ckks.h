@@ -34,5 +34,5 @@ public:
     void deserializeOutput();
 
     Ciphertext<DCRTPoly> compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB);
-
+    Ciphertext<DCRTPoly> swap(Ciphertext<DCRTPoly> m_InputC, bool even);
 };
