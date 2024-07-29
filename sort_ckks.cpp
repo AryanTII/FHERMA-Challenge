@@ -104,19 +104,20 @@ Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext
 
 Ciphertext<DCRTPoly> SortCKKS::swap(Ciphertext<DCRTPoly> m_InputC, bool even){
     
-    auto b = cc->EvalRotate(m_InputC, 1);
-    c = compare(m_InputC, b)
-    X = cc->EvalAdd(cc->EvalMult(c, cc->EvalSub(b,a)), a); 
+    // auto b = cc->EvalRotate(m_InputC, 1);
+    // c = compare(m_InputC, b)
+    // X = cc->EvalAdd(cc->EvalMult(c, cc->EvalSub(b,a)), a); 
 
-    auto b_ = cc->EvalRotate(m_InputC, -1);
-    c_ = compare(b_, m_InputC)
-    Y = cc->EvalAdd(cc->EvalMult(c_, cc->EvalSub(b_,a)), a); 
-    Ciphertext<DCRTPoly> val;
-    if even
-        val = cc->EvalSum(cc->EvalMult(X, m_MaskOdd), cc->EvalMult(Y, m_MaskEven))
-    else    
-        val = cc->EvalSum(cc->EvalMult(X, m_MaskEven), cc->EvalMult(Y, m_MaskOdd))
-    return val
+    // auto b_ = cc->EvalRotate(m_InputC, -1);
+    // c_ = compare(b_, m_InputC)
+    // Y = cc->EvalAdd(cc->EvalMult(c_, cc->EvalSub(b_,a)), a); 
+    // Ciphertext<DCRTPoly> val;
+    // if even
+    //     val = cc->EvalSum(cc->EvalMult(X, m_MaskOdd), cc->EvalMult(Y, m_MaskEven))
+    // else    
+    //     val = cc->EvalSum(cc->EvalMult(X, m_MaskEven), cc->EvalMult(Y, m_MaskOdd))
+    // return val
+    return m_InputC;
 }
 
 void SortCKKS::eval(){
@@ -126,31 +127,31 @@ void SortCKKS::eval(){
     std::cout << std::endl;
     
 
-    // // To be filled
-    // m_OutputC = m_InputC;
+    // To be filled
+    m_OutputC = m_InputC;
 
-    // // Working
-    // // Ciphertext<DCRTPoly> temp_cipher = compare(m_InputC, m_OutputC);
-    // // m_OutputC = temp_cipher*m_InputC;
+    // Working
+    // Ciphertext<DCRTPoly> temp_cipher = compare(m_InputC, m_OutputC);
+    // m_OutputC = temp_cipher*m_InputC;
 
-    // auto temp_cipherA = compare(m_InputC, m_OutputC);
-    // m_OutputC = m_cc->EvalMult(m_MaskEven, m_InputC);
+    auto temp_cipherA = compare(m_InputC, m_OutputC);
+    m_OutputC = m_cc->EvalMult(m_MaskEven, m_InputC);
 
 
-    bool isSorted = false;
-    while (!isSorted)
-    {
-        isSorted = true;
-        for (int i=1; i<=n-2; i=i+2)
-        {
-            m_InputC = swap(m_InputC, true)
-        }
-        // Perform Bubble sort on even indexed element
-        for (int i=0; i<=n-2; i=i+2)
-        {
-            m_InputC = swap(m_InputC, false)
-        }
-    }
+    // bool isSorted = false;
+    // while (!isSorted)
+    // {
+    //     isSorted = true;
+    //     for (int i=1; i<=n-2; i=i+2)
+    //     {
+    //         m_InputC = swap(m_InputC, true)
+    //     }
+    //     // Perform Bubble sort on even indexed element
+    //     for (int i=0; i<=n-2; i=i+2)
+    //     {
+    //         m_InputC = swap(m_InputC, false)
+    //     }
+    // }
 }
 
 void SortCKKS::deserializeOutput(){
