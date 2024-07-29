@@ -68,6 +68,14 @@ void SortCKKS::eval(){
     
     // To be filled
     m_OutputC = m_InputC;
+
+    // Working
+    // Ciphertext<DCRTPoly> temp_cipher = compare(m_InputC, m_OutputC);
+    // m_OutputC = temp_cipher*m_InputC;
+
+    auto temp_cipherA = compare(m_InputC, m_OutputC);
+    m_OutputC = m_cc->EvalMult(temp_cipherA, m_InputC);
+
 }
 
 void SortCKKS::deserializeOutput(){
@@ -76,4 +84,20 @@ void SortCKKS::deserializeOutput(){
     {
         std::cerr << " Could not serialize output ciphertext" << std::endl;
     }
+}
+
+
+Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB){
+
+    // ------------- Start of Dummy ------------------------------
+    vector<double> result = {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0};
+
+    Plaintext result_plaintext = m_cc->MakeCKKSPackedPlaintext(result);
+    std::cout << "Result vector (Dummy): " << result_plaintext << std::endl;
+
+    Ciphertext<DCRTPoly> result_ciphertext = m_cc->Encrypt(m_PublicKey, result_plaintext);
+    return result_ciphertext;
+    // ------------- End of Dummy ------------------------------
+
+
 }
