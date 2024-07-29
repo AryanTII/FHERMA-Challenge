@@ -89,33 +89,6 @@ void SortCKKS::initCC(){
 
 }
 
-void SortCKKS::eval(){
-
-    std::cout << "This is the sorting method that needs to be filled" << std::endl;
-    std::cout << "The output should be the ciphertext on m_OutputC" << std::endl;
-    std::cout << std::endl;
-    
-    // To be filled
-    m_OutputC = m_InputC;
-
-    // Working
-    // Ciphertext<DCRTPoly> temp_cipher = compare(m_InputC, m_OutputC);
-    // m_OutputC = temp_cipher*m_InputC;
-
-    auto temp_cipherA = compare(m_InputC, m_OutputC);
-    m_OutputC = m_cc->EvalMult(m_MaskEven, m_InputC);
-
-}
-
-void SortCKKS::deserializeOutput(){
-
-    if (!Serial::SerializeToFile(m_OutputLocation, m_OutputC, SerType::BINARY))
-    {
-        std::cerr << " Could not serialize output ciphertext" << std::endl;
-    }
-}
-
-
 Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB){
 
     // ------------- Start of Dummy ------------------------------
@@ -127,6 +100,66 @@ Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext
     Ciphertext<DCRTPoly> result_ciphertext = m_cc->Encrypt(m_PublicKey, result_plaintext);
     return result_ciphertext;
     // ------------- End of Dummy ------------------------------
-
-
 }
+
+Ciphertext<DCRTPoly> SortCKKS::swap(Ciphertext<DCRTPoly> m_InputC, bool even){
+    
+    auto b = cc->EvalRotate(m_InputC, 1);
+    c = compare(m_InputC, b)
+    X = cc->EvalAdd(cc->EvalMult(c, cc->EvalSub(b,a)), a); 
+
+    auto b_ = cc->EvalRotate(m_InputC, -1);
+    c_ = compare(b_, m_InputC)
+    Y = cc->EvalAdd(cc->EvalMult(c_, cc->EvalSub(b_,a)), a); 
+    Ciphertext<DCRTPoly> val;
+    if even
+        val = cc->EvalSum(cc->EvalMult(X, m_MaskOdd), cc->EvalMult(Y, m_MaskEven))
+    else    
+        val = cc->EvalSum(cc->EvalMult(X, m_MaskEven), cc->EvalMult(Y, m_MaskOdd))
+    return val
+}
+
+void SortCKKS::eval(){
+
+    std::cout << "This is the sorting method that needs to be filled" << std::endl;
+    std::cout << "The output should be the ciphertext on m_OutputC" << std::endl;
+    std::cout << std::endl;
+    
+
+    // // To be filled
+    // m_OutputC = m_InputC;
+
+    // // Working
+    // // Ciphertext<DCRTPoly> temp_cipher = compare(m_InputC, m_OutputC);
+    // // m_OutputC = temp_cipher*m_InputC;
+
+    // auto temp_cipherA = compare(m_InputC, m_OutputC);
+    // m_OutputC = m_cc->EvalMult(m_MaskEven, m_InputC);
+
+
+    bool isSorted = false;
+    while (!isSorted)
+    {
+        isSorted = true;
+        for (int i=1; i<=n-2; i=i+2)
+        {
+            m_InputC = swap(m_InputC, true)
+        }
+        // Perform Bubble sort on even indexed element
+        for (int i=0; i<=n-2; i=i+2)
+        {
+            m_InputC = swap(m_InputC, false)
+        }
+    }
+}
+
+void SortCKKS::deserializeOutput(){
+
+    if (!Serial::SerializeToFile(m_OutputLocation, m_OutputC, SerType::BINARY))
+    {
+        std::cerr << " Could not serialize output ciphertext" << std::endl;
+    }
+}
+
+
+
