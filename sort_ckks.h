@@ -20,6 +20,7 @@ class SortCKKS {
     Ciphertext<DCRTPoly> m_OutputC;
     Plaintext m_MaskOdd;
     Plaintext m_MaskEven;
+    Plaintext m_half;
     string m_PubKeyLocation;
     string m_MultKeyLocation;
     string m_RotKeyLocation;
