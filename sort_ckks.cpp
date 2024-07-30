@@ -232,7 +232,8 @@ void SortCKKS::initCC()
     std::vector<double> mask_even(array_limit);
     std::vector<double> mask_zero(array_limit);
     std::vector<double> mask_one(array_limit);
-    std::vector<double> half(array_limit);
+    std::vector<double> arr_half(array_limit);
+    std::vector<double> arr_one(array_limit);
 
     for (int i = 0; i < array_limit; ++i) 
     {
@@ -253,7 +254,8 @@ void SortCKKS::initCC()
             mask_odd[i] = 0.0;
             mask_even[i] = 1.0;
         }
-        half[i] = 0.5;
+        arr_half[i] = 0.5;
+        arr_one[i] = 1;
     }
 
     // Binary Masks
@@ -261,7 +263,8 @@ void SortCKKS::initCC()
     m_MaskEven = m_cc->MakeCKKSPackedPlaintext(mask_even); //01010...1
     m_MaskZero = m_cc->MakeCKKSPackedPlaintext(mask_zero); //10000...1
     m_MaskOne  = m_cc->MakeCKKSPackedPlaintext(mask_one);  //01111...0
-    m_half = m_cc->MakeCKKSPackedPlaintext(half);
+    m_Half = m_cc->MakeCKKSPackedPlaintext(arr_half);
+    m_One = m_cc->MakeCKKSPackedPlaintext(arr_one);
 }
 
 Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB)
@@ -432,16 +435,17 @@ Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext
 
         result_ciphertext = m_cc->EvalAdd(result_ciphertext, t59);
     }
-    result_ciphertext = m_cc->EvalMult(0.5,m_cc->EvalAdd(1,result_ciphertext));
+
+    result_ciphertext = m_cc->EvalMult(m_Half, m_cc->EvalAdd(m_One, result_ciphertext));
     return result_ciphertext;
-    
-    
+
 }
 
 Ciphertext<DCRTPoly> SortCKKS::swap(Ciphertext<DCRTPoly> a, bool is_even){
 
     auto b = m_cc->EvalRotate(a, 1);
     auto c = compare(a, b);
+
     auto X = m_cc->EvalAdd(m_cc->EvalMult(c, m_cc->EvalSub(b,a)), a); // c*(b - a)+a
     
     auto b_ = m_cc->EvalRotate(a, -1);
@@ -458,6 +462,16 @@ Ciphertext<DCRTPoly> SortCKKS::swap(Ciphertext<DCRTPoly> a, bool is_even){
         result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), m_cc->EvalMult(result, m_MaskOne));
     }
     return result;
+}
+
+void SortCKKS::eval_test()
+{
+    m_cc->Enable(ADVANCEDSHE);
+
+    auto a = m_InputC;
+    auto b = m_cc->EvalRotate(a, 1);
+
+    m_OutputC = compare(a, b);
 }
 
 void SortCKKS::eval()
