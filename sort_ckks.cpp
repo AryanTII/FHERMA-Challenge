@@ -276,6 +276,7 @@ Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext
 
     /*
     result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeff_val, -1, 1);
+    Ciphertext<DCRTPoly> result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeff_val, -1, 1);
 
     std::vector<Ciphertext<DCRTPoly>> t(1024);
     int l = 512;
