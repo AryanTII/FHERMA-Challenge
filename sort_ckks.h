@@ -20,6 +20,8 @@ class SortCKKS {
     Ciphertext<DCRTPoly> m_OutputC;
     Plaintext m_MaskOdd;
     Plaintext m_MaskEven;
+    Plaintext m_MaskZero; 
+    Plaintext m_MaskOne;  
     string m_PubKeyLocation;
     string m_MultKeyLocation;
     string m_RotKeyLocation;
@@ -37,5 +39,5 @@ public:
     void deserializeOutput();
 
     Ciphertext<DCRTPoly> compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB);
-    Ciphertext<DCRTPoly> swap(Ciphertext<DCRTPoly> m_InputC, bool even);
+    Ciphertext<DCRTPoly> swap(Ciphertext<DCRTPoly> m_InputC, bool is_even);
 };

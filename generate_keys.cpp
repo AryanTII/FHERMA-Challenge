@@ -6,7 +6,7 @@ int main() {
     // CKKS parameters
     uint32_t multDepth = 29;
     uint32_t scaleModSize = 59;
-    uint32_t batchSize = 8;
+    uint32_t batchSize = 65536;
 
     // Setup CKKS parameters
     CCParams<CryptoContextCKKSRNS> parameters;

@@ -65,8 +65,18 @@ void SortCKKS::initCC(){
     // ------------- Generation of Masks ------------------------------
     std::vector<double> mask_odd(array_limit);
     std::vector<double> mask_even(array_limit);
+    std::vector<double> mask_zero(array_limit);
+    std::vector<double> mask_one(array_limit);
 
     for (int i = 0; i < array_limit; ++i) {
+        if ( (i==0) || (i==array_limit-1)){
+            mask_zero[i] = 1;
+            mask_one[i]  = 0;
+        } else {
+            mask_zero[i] = 0;
+            mask_one[i]  = 1;
+        }
+
         if (i % 2 == 0) {
             mask_odd[i] = 1.0;
             mask_even[i] = 0.0;
@@ -76,99 +86,57 @@ void SortCKKS::initCC(){
         }
     }
 
-    // vector<double> mask_odd  = {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0};
-    // vector<double> mask_even = {0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
-    m_MaskOdd  = m_cc->MakeCKKSPackedPlaintext(mask_odd);
-    m_MaskEven = m_cc->MakeCKKSPackedPlaintext(mask_even);
-    // ----------------------------------------------------------------
-
-    // std::cout << "Value of n:" << m_cc->GetEncodingParams()->GetBatchSize() << std::endl;
-    // std::cout << "Value of n:" << m_cc.GetRingDim() << std::endl;
-    // std::cout << "Value of n:" << m_cc.GetRingDim() << std::endl;
-
-
+    // Binary Masks
+    m_MaskOdd  = m_cc->MakeCKKSPackedPlaintext(mask_odd);  //10101...0
+    m_MaskEven = m_cc->MakeCKKSPackedPlaintext(mask_even); //01010...1
+    m_MaskZero = m_cc->MakeCKKSPackedPlaintext(mask_zero); //10000...1
+    m_MaskOne  = m_cc->MakeCKKSPackedPlaintext(mask_one);  //01111...0
 }
 
 Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB){
 
     // ------------- Start of Dummy ------------------------------
     vector<double> result = {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0};
-
     Plaintext result_plaintext = m_cc->MakeCKKSPackedPlaintext(result);
-    std::cout << "Result vector (Dummy): " << result_plaintext << std::endl;
-
     Ciphertext<DCRTPoly> result_ciphertext = m_cc->Encrypt(m_PublicKey, result_plaintext);
     return result_ciphertext;
     // ------------- End of Dummy ------------------------------
+
 }
 
-Ciphertext<DCRTPoly> SortCKKS::swap(Ciphertext<DCRTPoly> tempPoly, Plaintext mask1, Plaintext mask2){
-    // uint32_t batchSize = 8;
-    // tempPoly->SetLength(batchSize);
-    auto a = tempPoly;
+Ciphertext<DCRTPoly> SortCKKS::swap(Ciphertext<DCRTPoly> a, bool is_even){
+
     auto b = m_cc->EvalRotate(a, 1);
     auto c = compare(a, b);
     auto X = m_cc->EvalAdd(m_cc->EvalMult(c, m_cc->EvalSub(b,a)), a); // c*(b - a)+a
 
     auto b_ = m_cc->EvalRotate(a, -1);
     auto c_ = compare(b_, a);
-    auto Y = m_cc->EvalAdd(m_cc->EvalMult(c_, m_cc->EvalSub(b_, a)), a);  // c_*(b_ - a)+a
-    Ciphertext<DCRTPoly> val;
-    // val = m_cc->EvalAdd(m_cc->EvalMult(X, mask1), m_cc->EvalMult(Y, mask2));
-    if (even == true)
-        val = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskOdd), m_cc->EvalMult(Y, m_MaskEven));
-    else
-        val = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskEven), m_cc->EvalMult(Y, m_MaskOdd));
-    return val;
+    auto Y  = m_cc->EvalAdd(m_cc->EvalMult(c_, m_cc->EvalSub(b_, a)), a);  // c_*(b_ - a)+a
+
+    Ciphertext<DCRTPoly> result;
+
+    if (is_even == true) {
+        result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskOdd), m_cc->EvalMult(Y, m_MaskEven));
+    }
+    else {
+        result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskEven), m_cc->EvalMult(Y, m_MaskOdd));
+        result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), m_cc->EvalMult(result, m_MaskOne));
+    }
+    return result;
 }
 
 void SortCKKS::eval(){
 
-    std::cout << "This is the sorting method that needs to be filled" << std::endl;
-    std::cout << "The output should be the ciphertext on m_OutputC" << std::endl;
-    std::cout << std::endl;
-    // bool isSorted = false;
-    auto dcrtPoly = m_InputC->GetElements();  // Get the elements of the ciphertext
-    int n = 8; // CHANGE THIS LATER
     auto tempPoly = m_InputC;
-    std::cout << n << std::endl;
-    // for(int i = 0; i < n; i++){
-    //     // isSorted = true;
-    //     for (int i=1; i<=n-2; i=i+2){
-            // tempPoly = swap(tempPoly, true);
-            
-        // }
-        // // Perform Bubble sort on even indexed element
-        // for (int i=0; i<=n-2; i=i+2){
-            tempPoly = swap(tempPoly, false);
-        // }
-    // }
 
-    // // To be filled
+    for(int iter = 0; iter < array_limit; iter++){
+        tempPoly = swap(tempPoly, true);
+        tempPoly = swap(tempPoly, false);
+    }
+
+    // Sorted vector
     m_OutputC = tempPoly;
-
-    // // Working
-    // // Ciphertext<DCRTPoly> temp_cipher = compare(m_InputC, m_OutputC);
-    // // m_OutputC = temp_cipher*m_InputC;
-
-    // auto temp_cipherA = compare(m_InputC, m_OutputC);
-    // m_OutputC = m_cc->EvalMult(m_MaskEven, m_InputC);
-
-    // bool isSorted = false;
-    // auto dcrtPoly = m_InputC->GetElements();  // Get the elements of the ciphertext
-    // int n = 8; // CHANGE THIS LATER
-    // std::cout << n << std::endl;
-    // // for(int i = 0; i < n; i++){
-    // //     // isSorted = true;
-    // //     for (int i=1; i<=n-2; i=i+2){
-    //         m_InputC = swap(m_InputC, true);
-
-        // }
-        // // Perform Bubble sort on even indexed element
-        // for (int i=0; i<=n-2; i=i+2){
-        //     m_InputC = swap(m_InputC, false);
-        // }
-    // }
 }
 
 void SortCKKS::deserializeOutput(){
