@@ -266,16 +266,14 @@ void SortCKKS::initCC()
 
 Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB)
 {
-
+    /*
     // ------------- Start of Dummy ------------------------------
     vector<double> result = {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0};
     Plaintext result_plaintext = m_cc->MakeCKKSPackedPlaintext(result);
     Ciphertext<DCRTPoly> result_ciphertext = m_cc->Encrypt(m_PublicKey, result_plaintext);
     return result_ciphertext;
-    // ------------- End of Dummy ------------------------------
-
-    /*
-    result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeff_val, -1, 1);
+    */
+ 
     Ciphertext<DCRTPoly> result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeff_val, -1, 1);
 
     std::vector<Ciphertext<DCRTPoly>> t(1024);
@@ -368,7 +366,6 @@ Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext
 
     for (int i = 0; i < len; i++)
     {
-
         double coeff = coeff_val4[i];
         auto temp1 = m_cc->EvalMult(m_cc->EvalMult(t[1 + 2 * i], coeff * 256), t[4]);
         auto temp2 = m_cc->EvalMult(t[3 - 2 * i], coeff * 128);
@@ -394,7 +391,6 @@ Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext
         temp1 = m_cc->EvalMult(temp1, t[512]);
         temp2 = m_cc->EvalMult(t[3 - 2 * i], coeff);
         auto t59 = m_cc->EvalSub(temp1, temp2);
-
         result_ciphertext = m_cc->EvalAdd(result_ciphertext, t59);
     }
 
@@ -438,7 +434,7 @@ Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext
     }
     result_ciphertext = m_cc->EvalMult(0.5,m_cc->EvalAdd(1,result_ciphertext));
     return result_ciphertext;
-    */
+    
     
 }
 
@@ -466,7 +462,7 @@ Ciphertext<DCRTPoly> SortCKKS::swap(Ciphertext<DCRTPoly> a, bool is_even){
 
 void SortCKKS::eval()
 {
-    // m_cc->Enable(ADVANCEDSHE);
+    m_cc->Enable(ADVANCEDSHE);
 
     auto tempPoly = m_InputC;
 
