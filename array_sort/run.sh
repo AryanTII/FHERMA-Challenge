@@ -1,4 +1,11 @@
 #!/bin/bash
+if [ ! -d "build" ]; then
+  mkdir build
+fi
+if [ ! -d "files" ]; then
+  mkdir files
+fi
+
 rm -rf build/*
 cd build
 cmake ..
