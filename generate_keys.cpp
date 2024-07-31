@@ -19,12 +19,13 @@ int main() {
     cc->Enable(PKESchemeFeature::PKE);
     cc->Enable(PKESchemeFeature::FHE);
     cc->Enable(PKESchemeFeature::LEVELEDSHE);
+    cc->Enable(PKESchemeFeature::ADVANCEDSHE);
 
     // Key generation
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
     cc->EvalAtIndexKeyGen(keys.secretKey, {1});
-    cc->EvalRotateKeyGen(keys.secretKey, {1, 2, -1, -2});
+    cc->EvalRotateKeyGen(keys.secretKey, {1, -1});
 
     // Serialize into binary files
     std::cout << "Serializing Relevant Keys and Inputs!" << std::endl;

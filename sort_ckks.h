@@ -43,5 +43,8 @@ public:
     Ciphertext<DCRTPoly> compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB);
     Ciphertext<DCRTPoly> swap(Ciphertext<DCRTPoly> m_InputC, bool is_even);
 
-    void eval_test(); // For testing
+    // For testing
+    vector<double> ChebyshevCoefficientsSign(int degree, double a, double b);
+    Ciphertext<DCRTPoly> compare_test(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB);
+    void eval_test(); 
 };

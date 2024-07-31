@@ -1,5 +1,12 @@
 #include "sort_ckks.h"
 
+/* Truncated vector for testing -------
+std::vector<double> coeff_val({0.0, 1.273238551875655,       0.0, -0.42441020299615195,    0.0, 0.25464294463091813,
+                               0.0, -0.18188441346502052,    0.0, 0.1414621246790797,      0.0, -0.11573812786240627,
+                               0.0});
+                               
+*/
+
 std::vector<double> coeff_val({0.0, 1.273238551875655,       0.0, -0.42441020299615195,    0.0, 0.25464294463091813,
                                0.0, -0.18188441346502052,    0.0, 0.1414621246790797,      0.0, -0.11573812786240627,
                                0.0, 0.09792859592938771,     0.0, -0.08486774290277588,    0.0, 0.07487956443817181,
@@ -267,6 +274,51 @@ void SortCKKS::initCC()
     m_One = m_cc->MakeCKKSPackedPlaintext(arr_one);
 }
 
+
+// Function to calculate Chebyshev coefficients for the sign function
+std::vector<double> SortCKKS::ChebyshevCoefficientsSign(int degree, double a, double b) {
+    int N = degree + 1;
+    std::vector<double> coeffs(N);
+    std::vector<double> nodes(N);
+    std::vector<double> values(N);
+
+    for (int i = 0; i < N; ++i) {
+        nodes[i] = cos(M_PI * (2 * i + 1) / (2 * N));
+        nodes[i] = 0.5 * ((b - a) * nodes[i] + (b + a)); // Map to interval [a, b]
+        values[i] = (nodes[i] >= 0 ? 1.0 : -1.0);
+    }
+
+    for (int k = 0; k <= degree; ++k) {
+        double c_k = 0.0;
+        for (int i = 0; i < N; ++i) {
+            c_k += values[i] * cos(k * M_PI * (2 * i + 1) / (2 * N));
+        }
+        c_k *= (k == 0 ? 1.0 : 2.0) / N;
+        coeffs[k] = c_k;
+    }
+
+    return coeffs;
+}
+
+
+
+
+Ciphertext<DCRTPoly> SortCKKS::compare_test(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB)
+{
+    // ----------- Custom code for Chebyshev ---------------------------------------
+    // Calculate Chebyshev coefficients for the sign function
+    int degree = 12;
+    double a = -1, b = 1;
+    std::vector<double> coeffs = ChebyshevCoefficientsSign(degree, a, b);
+    auto result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeffs, -1, 1);
+    std::cout << "Chebyshev coefficients of degree " << degree << " : " << coeffs << std::endl;
+    // ------------ End of custom code ----------------------------------------------
+
+    // Original code from compare function below
+    // auto result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeff_val, -1, 1);
+    return result_ciphertext;
+}
+
 Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB)
 {
     /*
@@ -471,7 +523,7 @@ void SortCKKS::eval_test()
     auto a = m_InputC;
     auto b = m_cc->EvalRotate(a, 1);
 
-    m_OutputC = compare(a, b);
+    m_OutputC = compare_test(a, b);
 }
 
 void SortCKKS::eval()
