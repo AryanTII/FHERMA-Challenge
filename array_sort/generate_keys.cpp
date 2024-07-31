@@ -3,29 +3,48 @@
 
 int main() {
 
-    // CKKS parameters
+
+    // CKKS parameters    
     uint32_t multDepth = 29;
-    uint32_t scaleModSize = 59;
+    uint32_t scaleMod = 59;
+    usint firstMod = 60;
+    ScalingTechnique rescaleTech = FLEXIBLEAUTO;
     uint32_t batchSize = 65536;
+    uint32_t levelsAvailableAfterBootstrap = 10;
+    usint depth = levelsAvailableAfterBootstrap + multDepth;
+    std::vector<uint32_t> levelBudget = {4, 4};
 
     // Setup CKKS parameters
     CCParams<CryptoContextCKKSRNS> parameters;
-    parameters.SetMultiplicativeDepth(multDepth);
-    parameters.SetScalingModSize(scaleModSize);
     parameters.SetBatchSize(batchSize);
+    parameters.SetScalingModSize(scaleMod);
+    parameters.SetScalingTechnique(rescaleTech);
+    parameters.SetFirstModSize(firstMod);
+    parameters.SetMultiplicativeDepth(depth);
+    // parameters.SetMultiplicativeDepth(multDepth);
+    
 
     // Generate crypto context
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
-    cc->Enable(PKESchemeFeature::PKE);
-    cc->Enable(PKESchemeFeature::FHE);
-    cc->Enable(PKESchemeFeature::LEVELEDSHE);
-    cc->Enable(PKESchemeFeature::ADVANCEDSHE);
+    cc->Enable(PKE);
+    cc->Enable(KEYSWITCH);
+    cc->Enable(LEVELEDSHE);
+    cc->Enable(ADVANCEDSHE);
+    cc->Enable(FHE);
+
+    usint ringDim = cc->GetRingDimension();
+    // This is the maximum number of slots that can be used for full packing.
+    usint numSlots = ringDim / 2;
+    cout << "CKKS scheme is using ring dimension " << ringDim << endl << endl;
+
+    cc->EvalBootstrapSetup(levelBudget);
 
     // Key generation
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
     cc->EvalAtIndexKeyGen(keys.secretKey, {1});
     cc->EvalRotateKeyGen(keys.secretKey, {1, -1});
+    cc->EvalBootstrapKeyGen(keys.secretKey, numSlots);
 
     // Serialize into binary files
     std::cout << "Serializing Relevant Keys and Inputs!" << std::endl;
