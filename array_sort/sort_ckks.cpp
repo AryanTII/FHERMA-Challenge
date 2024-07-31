@@ -305,18 +305,26 @@ std::vector<double> SortCKKS::ChebyshevCoefficientsSign(int degree, double a, do
 
 Ciphertext<DCRTPoly> SortCKKS::compare_test(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB)
 {
+    auto input_ciphertext = m_cc->EvalSub(m_InputA, m_InputB);
+
     // ----------- Custom code for Chebyshev ---------------------------------------
     // Calculate Chebyshev coefficients for the sign function
     int degree = 12;
     double a = -1, b = 1;
     std::vector<double> coeffs = ChebyshevCoefficientsSign(degree, a, b);
-    auto result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeffs, -1, 1);
+    auto result_ciphertext = m_cc->EvalChebyshevSeries(input_ciphertext, coeffs, -1, 1);
     std::cout << "Chebyshev coefficients of degree " << degree << " : " << coeffs << std::endl;
     // ------------ End of custom code ----------------------------------------------
 
+
+    // Performing bootstrapping
+    auto result_bootstrapped = m_cc->EvalBootstrap(result_ciphertext);
+    return result_bootstrapped;
+    
+
     // Original code from compare function below
-    // auto result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeff_val, -1, 1);
-    return result_ciphertext;
+    // auto result_ciphertext = m_cc->EvalChebyshevSeries(input_ciphertext, coeff_val, -1, 1);
+    // return result_ciphertext;
 }
 
 Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB)

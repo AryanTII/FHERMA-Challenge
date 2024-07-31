@@ -3,14 +3,18 @@
 
 int main() {
 
-
     // CKKS parameters    
     uint32_t multDepth = 29;
     uint32_t scaleMod = 59;
     usint firstMod = 60;
-    ScalingTechnique rescaleTech = FLEXIBLEAUTO;
+    ScalingTechnique rescaleTech = FLEXIBLEAUTO; //Custom
+    // ----------- Alternate ------------------- 
+    // uint32_t scaleMod = 78;//59;
+    // usint firstMod = 89;//60;
+    // ScalingTechnique rescaleTech = FIXEDAUTO; //Custom
+    // ----------- Alternate -------------------
     uint32_t batchSize = 65536;
-    uint32_t levelsAvailableAfterBootstrap = 10;
+    uint32_t levelsAvailableAfterBootstrap = 10; 
     usint depth = levelsAvailableAfterBootstrap + multDepth;
     std::vector<uint32_t> levelBudget = {4, 4};
 
@@ -21,9 +25,8 @@ int main() {
     parameters.SetScalingTechnique(rescaleTech);
     parameters.SetFirstModSize(firstMod);
     parameters.SetMultiplicativeDepth(depth);
-    // parameters.SetMultiplicativeDepth(multDepth);
+    // parameters.SetMultiplicativeDepth(multDepth); //Initial
     
-
     // Generate crypto context
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
     cc->Enable(PKE);
