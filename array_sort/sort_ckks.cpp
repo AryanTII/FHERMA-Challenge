@@ -241,6 +241,8 @@ void SortCKKS::initCC()
     std::vector<double> mask_one(array_limit);
     std::vector<double> arr_half(array_limit);
     std::vector<double> arr_one(array_limit);
+    std::vector<double> m_norm(array_limit);
+    double input_norm = 1/255; 
 
     for (int i = 0; i < array_limit; ++i) 
     {
@@ -263,6 +265,7 @@ void SortCKKS::initCC()
         }
         arr_half[i] = 0.5;
         arr_one[i] = 1;
+        m_norm[i] = input_norm;
     }
 
     // Binary Masks
@@ -272,6 +275,7 @@ void SortCKKS::initCC()
     m_MaskOne  = m_cc->MakeCKKSPackedPlaintext(mask_one);  //01111...0
     m_Half = m_cc->MakeCKKSPackedPlaintext(arr_half);
     m_One = m_cc->MakeCKKSPackedPlaintext(arr_one);
+    m_Norm = m_cc->MakeCKKSPackedPlaintext(m_norm);
 }
 
 
@@ -306,22 +310,55 @@ std::vector<double> SortCKKS::ChebyshevCoefficientsSign(int degree, double a, do
 Ciphertext<DCRTPoly> SortCKKS::compare_test(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB)
 {
     auto input_ciphertext = m_cc->EvalSub(m_InputA, m_InputB);
+    auto norm_ciphertext = m_cc->EvalMult(input_ciphertext, m_Norm);
 
-    // ----------- Custom code for Chebyshev ---------------------------------------
-    // Calculate Chebyshev coefficients for the sign function
-    int degree = 12;
-    double a = -1, b = 1;
-    std::vector<double> coeffs = ChebyshevCoefficientsSign(degree, a, b);
-    auto result_ciphertext = m_cc->EvalChebyshevSeries(input_ciphertext, coeffs, -1, 1);
-    std::cout << "Chebyshev coefficients of degree " << degree << " : " << coeffs << std::endl;
-    // ------------ End of custom code ----------------------------------------------
+    // // ----------- From OpenFHE (Working not accurate) ---------------------------------------
+    // // Input range
+    // double range_a = -1;
+    // double range_b = 1;
 
-
-    // Performing bootstrapping
-    auto result_bootstrapped = m_cc->EvalBootstrap(result_ciphertext);
-    return result_bootstrapped;
+    // auto result_ciphertext = m_cc->EvalChebyshevSeries(norm_ciphertext, coeff_val, range_a, range_b);
     
+    // return result_ciphertext;
+    // // ----------- From OpenFHE ----------------------------------------------------------------
 
+
+    // ----------- From OpenFHE (Working not accurate) ---------------------------------------
+    // Chebyshev coefficients
+    std::vector<double> coefficients({1.0, 0.558971, 0.0, -0.0943712, 0.0, 0.0215023, 0.0, -0.00505348, 0.0, 0.00119324,
+                                      0.0, -0.000281928, 0.0, 0.0000664347, 0.0, -0.0000148709});
+
+    // Input range
+    double range_a = -1;
+    double range_b = 1;
+
+    auto result_ciphertext = m_cc->EvalChebyshevSeries(norm_ciphertext, coefficients, range_a, range_b);
+    
+    return result_ciphertext;
+    // ----------- From OpenFHE ----------------------------------------------------------------
+
+
+
+
+    // // ----------- Custom code for Chebyshev ---------------------------------------
+    // // Calculate Chebyshev coefficients for the sign function
+    // int degree = 12;
+    // double a = -1, b = 1;
+    // std::vector<double> coeffs = ChebyshevCoefficientsSign(degree, a, b);
+    // auto result_ciphertext = m_cc->EvalChebyshevSeries(input_ciphertext, coeffs, -1, 1);
+    // std::cout << "Chebyshev coefficients of degree " << degree << " : " << coeffs << std::endl;
+    // // ------------ End of custom code ----------------------------------------------
+
+    // // // Input range
+    // // double range_a = -4;
+    // // double range_b = 4;
+
+    // // Performing bootstrapping
+    // auto result_bootstrapped = m_cc->EvalBootstrap(result_ciphertext);
+    // return result_bootstrapped;
+    // return result_ciphertext;
+
+     
     // Original code from compare function below
     // auto result_ciphertext = m_cc->EvalChebyshevSeries(input_ciphertext, coeff_val, -1, 1);
     // return result_ciphertext;
@@ -336,8 +373,21 @@ Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext
     Ciphertext<DCRTPoly> result_ciphertext = m_cc->Encrypt(m_PublicKey, result_plaintext);
     return result_ciphertext;
     */
- 
-    Ciphertext<DCRTPoly> result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeff_val, -1, 1);
+
+    auto input_ciphertext = m_cc->EvalSub(m_InputA, m_InputB);
+    auto norm_ciphertext = m_cc->EvalMult(input_ciphertext, m_Norm);
+
+    // Input range
+    double range_a = -1;
+    double range_b = 1;
+
+    auto result_ciphertext = m_cc->EvalChebyshevSeries(norm_ciphertext, coeff_val, range_a, range_b);
+
+
+
+    // Form aikata10
+
+    // Ciphertext<DCRTPoly> result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeff_val, -1, 1);
 
     std::vector<Ciphertext<DCRTPoly>> t(1024);
     int l = 512;

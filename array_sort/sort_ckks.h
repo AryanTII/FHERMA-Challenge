@@ -24,6 +24,7 @@ class SortCKKS {
     Plaintext m_MaskOne;  
     Plaintext m_Half;
     Plaintext m_One;
+    Plaintext m_Norm;
     string m_PubKeyLocation;
     string m_MultKeyLocation;
     string m_RotKeyLocation;
