@@ -23,10 +23,15 @@
     docker-compose up
     ```
 
-4. Run the below command in the shell of the above created docker container:
+4. Navigate to the respective challenge folder (e.g. `array_sort`) in the shell of the above created docker container:
+    ```
+    cd array_sort
+    ```
+
+4. Run the below command (example folder within docker container shell):
     ```
     mkdir build
-    ./run.sh
+    ./run.sh 
     ```
     **IMPORTANT**: (First time Setup) To generate the keys and input files for local testing, run the following:
     ```

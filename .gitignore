@@ -33,7 +33,8 @@
 
 # Build
 build/
-files/
+*/build/
+*/files/
 
 # OpenFHE
 openfhe-development/
