@@ -32,6 +32,7 @@ class SortCKKS {
     string m_InputLocation;
     string m_OutputLocation;
     int array_limit;
+    double Norm_Value;
 
 public:
     SortCKKS(string ccLocation, string pubKeyLocation, string multKeyLocation,
@@ -40,6 +41,9 @@ public:
     void initCC();
     void eval();
     void deserializeOutput();
+
+    Ciphertext<DCRTPoly> sign(Ciphertext<DCRTPoly> m_InputC);
+    Ciphertext<DCRTPoly> cond_swap(Ciphertext<DCRTPoly> m_InputC, bool is_even);
 
     Ciphertext<DCRTPoly> compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB);
     Ciphertext<DCRTPoly> swap(Ciphertext<DCRTPoly> m_InputC, bool is_even);
