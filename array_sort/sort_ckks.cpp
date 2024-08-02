@@ -1,12 +1,5 @@
 #include "sort_ckks.h"
 
-/* Truncated vector for testing -------
-std::vector<double> coeff_val({0.0, 1.273238551875655,       0.0, -0.42441020299615195,    0.0, 0.25464294463091813,
-                               0.0, -0.18188441346502052,    0.0, 0.1414621246790797,      0.0, -0.11573812786240627,
-                               0.0});
-                               
-*/
-
 std::vector<double> coeff_val({0.0, 1.273238551875655,       0.0, -0.42441020299615195,    0.0, 0.25464294463091813,
                                0.0, -0.18188441346502052,    0.0, 0.1414621246790797,      0.0, -0.11573812786240627,
                                0.0, 0.09792859592938771,     0.0, -0.08486774290277588,    0.0, 0.07487956443817181,
@@ -292,6 +285,7 @@ void SortCKKS::initCC()
 Ciphertext<DCRTPoly> SortCKKS::sign(Ciphertext<DCRTPoly> m_InputC)
 {
     auto norm_ciphertext = m_cc->EvalMult(m_InputC, Norm_Value);
+    coeff_val.resize(8); // Set number of coefficients to be used
     auto result_ciphertext = m_cc->EvalChebyshevSeries(norm_ciphertext, coeff_val, -1, 1);
     return result_ciphertext;
 }
@@ -332,13 +326,17 @@ void SortCKKS::eval_test()
     m_cc->Enable(ADVANCEDSHE);
 
     auto tempPoly = m_InputC;
+    std::cout << "Number of levels used out of 29: " << tempPoly->GetLevel() << std::endl;
 
-    // tempPoly = m_cc->EvalSub(10.0, tempPoly);
+    // // Bootstrapping
+    //  auto tempPolyNew = m_cc->EvalBootstrap(tempPoly);
+    // std::cout << "Number of levels used out of 29 (New): " << tempPolyNew->GetLevel() << std::endl;
 
     tempPoly = cond_swap(tempPoly, true);
-    tempPoly = cond_swap(tempPoly, false);
-    // // tempPoly = m_cc->EvalBootstrap(tempPoly);
-    // // tempPoly = cond_swap(tempPoly, true);
+    std::cout << "Number of levels used: " << tempPoly->GetLevel() << std::endl;
+
+    tempPoly = cond_swap(tempPoly, false); //Works upto here for coeff size=actual
+    std::cout << "Number of levels used out of 29: " << tempPoly->GetLevel() << std::endl;
 
     // Sorted vector
     m_OutputC = tempPoly;

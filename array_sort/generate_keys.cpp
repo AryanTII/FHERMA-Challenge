@@ -16,7 +16,9 @@ int main() {
     uint32_t batchSize = 65536;
     uint32_t levelsAvailableAfterBootstrap = 10; 
     usint depth = levelsAvailableAfterBootstrap + multDepth;
-    std::vector<uint32_t> levelBudget = {4, 4};
+    // std::vector<uint32_t> levelBudget = {4, 4};
+    std::vector<uint32_t> levelBudget = {2, 2};
+    std::vector<uint32_t> bsgsDim = {0, 0};
 
     // Setup CKKS parameters
     CCParams<CryptoContextCKKSRNS> parameters;
@@ -24,8 +26,8 @@ int main() {
     parameters.SetScalingModSize(scaleMod);
     parameters.SetScalingTechnique(rescaleTech);
     parameters.SetFirstModSize(firstMod);
-    parameters.SetMultiplicativeDepth(depth);
     // parameters.SetMultiplicativeDepth(multDepth); //Initial
+    parameters.SetMultiplicativeDepth(depth);
     
     // Generate crypto context
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
@@ -40,7 +42,8 @@ int main() {
     usint numSlots = ringDim / 2;
     cout << "CKKS scheme is using ring dimension " << ringDim << endl << endl;
 
-    cc->EvalBootstrapSetup(levelBudget);
+    // cc->EvalBootstrapSetup(levelBudget); //Simple
+    cc->EvalBootstrapSetup(levelBudget, bsgsDim, numSlots); //Advanced
 
     // Key generation
     auto keys = cc->KeyGen();
@@ -101,6 +104,22 @@ int main() {
     }
     
     std::cout << "Serialization completed successfully!" << std::endl;
+
+
+    // -------------------------- Dummy Bootstrap testing -------------------
+    std::cout << "Number of levels used out of 29: " << ciphertext->GetLevel() << std::endl;
+
+    auto ciphertext1 = cc->EvalMult(ciphertext, ciphertext);
+    std::cout << "Number of levels used out of 29: " << ciphertext1->GetLevel() << std::endl;
+
+    auto ciphertext2 = cc->EvalMult(ciphertext1, ciphertext1);
+    std::cout << "Number of levels used out of 29: " << ciphertext2->GetLevel() << std::endl;
+
+    // Bootstrapping
+    // auto tempPolyNew = cc->EvalBootstrap(ciphertext2);
+    // std::cout << "Number of levels used out of 29 (New): " << tempPolyNew->GetLevel() << std::endl;
+
+    // ------------------- End of Dummy Bootstrap testing -------------------
 
     return 0;
 }
