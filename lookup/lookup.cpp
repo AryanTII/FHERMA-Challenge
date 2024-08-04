@@ -66,8 +66,26 @@ void LookUp::initCC()
 void LookUp::eval()
 {
     std::cout << " To be filled" << std::endl;
-    m_OutputC = m_InputC;
+    // m_OutputC = m_InputC;
     std::cout << " Deadline is August 06... Hurry Up" << std::endl;
+
+    std::vector<int64_t> ind_array(array_limit);
+    for(int iter = 0; iter < array_limit; iter++){
+        ind_array[iter] = iter + 1;
+    }
+    Plaintext index_array = m_cc->MakePackedPlaintext(ind_array);
+
+    // Rotate and subtract index
+    auto index_rot = m_IndexC;
+    auto index_sub = m_cc->EvalSub(index_array, index_rot);
+
+    for(int iter = 1; iter < array_limit; iter++){
+        index_rot = m_cc->EvalRotate(index_rot, -1);
+        index_sub = m_cc->EvalSub(index_sub, index_rot);
+    }
+    // index_sub has 0 in input index and non-zero otherwise
+    m_OutputC = index_sub;
+
 }
 
 void LookUp::deserializeOutput()

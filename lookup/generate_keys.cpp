@@ -16,6 +16,7 @@ int main() {
     cc->Enable(PKESchemeFeature::PKE);
     cc->Enable(PKESchemeFeature::FHE);
     cc->Enable(PKESchemeFeature::LEVELEDSHE);
+    cc->Enable(PKESchemeFeature::ADVANCEDSHE);
 
     // /// OLD from CKKS scheme
     // uint32_t scaleModSize = 59;
@@ -23,7 +24,7 @@ int main() {
     // // Setup CKKS parameters
     // parameters.SetScalingModSize(scaleModSize);
     // parameters.SetBatchSize(batchSize);
-    // cc->Enable(PKESchemeFeature::ADVANCEDSHE);
+    
     // // End of OLD
 
     // Generate a public/private key pair
