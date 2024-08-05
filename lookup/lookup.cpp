@@ -69,22 +69,55 @@ void LookUp::eval()
     // m_OutputC = m_InputC;
     std::cout << " Deadline is August 06... Hurry Up" << std::endl;
 
-    std::vector<int64_t> ind_array(array_limit);
-    for(int iter = 0; iter < array_limit; iter++){
-        ind_array[iter] = iter + 1;
+    std::vector<int64_t> mask_one(array_limit, 1);
+    std::vector<int64_t> mask_field(array_limit, 32768);
+    Plaintext m_One = m_cc->MakePackedPlaintext(mask_one);
+    Plaintext m_Field = m_cc->MakePackedPlaintext(mask_field);
+
+    std::vector<int64_t> ind_array(array_limit); 
+    for(usint iter = 0; iter < array_limit; iter++){
+        ind_array[iter] = iter;
     }
     Plaintext index_array = m_cc->MakePackedPlaintext(ind_array);
 
+    // Start of Stage 1: index_sub should have 0 in input index and non-zero otherwise
     // Rotate and subtract index
     auto index_rot = m_IndexC;
     auto index_sub = m_cc->EvalSub(index_array, index_rot);
 
-    for(int iter = 1; iter < array_limit; iter++){
+    for(usint iter = 1; iter < array_limit; iter++){
         index_rot = m_cc->EvalRotate(index_rot, -1);
         index_sub = m_cc->EvalSub(index_sub, index_rot);
     }
-    // index_sub has 0 in input index and non-zero otherwise
-    m_OutputC = index_sub;
+    // End of Stage 1: index_sub has 0 in input index and non-zero otherwise
+
+
+    // Start of Stage 2: index_sub should have 1 in input index and 0 otherwise
+    // This is not complete
+    // std::vector<Ciphertext<DCRTPoly>> ciphertextVec(5, index_sub);
+
+    for(usint iter = 0; iter < 10; iter++){
+        index_sub = m_cc->EvalSquare(index_sub);
+        // index_sub = m_cc->EvalMultMany(ciphertextVec);
+        std::cout << "(Iter " << iter+1 <<  ") - Number of levels used: " << index_sub->GetLevel() << std::endl;
+    }
+
+    // 1 - (A-B)^{p-1}
+    index_sub = m_cc->EvalSub(m_One, index_sub);
+    // End of Stage 2: index_sub has 1 in input index and 0 otherwise
+
+
+    // Start of Stage 3: Compute inner product at first location     
+    index_sub = m_cc->EvalMult(index_sub, m_InputC);
+    auto index_inner = index_sub;
+    for(usint iter = 1; iter < array_limit; iter++){
+        index_sub = m_cc->EvalRotate(index_sub, 1);
+        index_inner = m_cc->EvalAdd(index_inner, index_sub);
+    }
+    // End of Stage 3: Compute inner product at first location 
+
+    m_OutputC = index_inner;
+    std::cout << "Number of levels used in m_OutputC: " << m_OutputC->GetLevel() << std::endl;
 
 }
 

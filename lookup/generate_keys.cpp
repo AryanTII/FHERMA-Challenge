@@ -4,12 +4,14 @@
 int main() {
 
     // BGV parameters
-    uint32_t multDepth = 5;
+    uint32_t multDepth = 15;
     uint32_t plaintext_modulus = 65537;
+    uint32_t max_relin_sk_deg = 15;
 
     CCParams<CryptoContextBGVRNS> parameters;
     parameters.SetMultiplicativeDepth(multDepth);
     parameters.SetPlaintextModulus(plaintext_modulus);
+    parameters.SetMaxRelinSkDeg(max_relin_sk_deg);
 
     // Generate crypto context
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
@@ -18,22 +20,12 @@ int main() {
     cc->Enable(PKESchemeFeature::LEVELEDSHE);
     cc->Enable(PKESchemeFeature::ADVANCEDSHE);
 
-    // /// OLD from CKKS scheme
-    // uint32_t scaleModSize = 59;
-    // uint32_t batchSize = 65536;
-    // // Setup CKKS parameters
-    // parameters.SetScalingModSize(scaleModSize);
-    // parameters.SetBatchSize(batchSize);
-    
-    // // End of OLD
-
     // Generate a public/private key pair
     auto keys = cc->KeyGen();
     // Generate the relinearization key
     cc->EvalMultKeyGen(keys.secretKey);
     // Generate the rotation evaluation keys
     cc->EvalRotateKeyGen(keys.secretKey, {1, 2, -1, -2});
-    // cc->EvalAtIndexKeyGen(keys.secretKey, {1});
 
     // Serialize into binary files
     std::cout << "Serializing Relevant Keys and Inputs!" << std::endl;
@@ -89,6 +81,8 @@ int main() {
     Plaintext index_plain = cc->MakePackedPlaintext(index);
     std::cout << "Input index: " << index_plain << std::endl;
     Ciphertext<DCRTPoly> index_cipher = cc->Encrypt(keys.publicKey, index_plain);
+
+    std::cout << "The output should be : " << input[index[0]] << std::endl;
 
     // Serialize index
     if (!Serial::SerializeToFile(indexLocation, index_cipher, SerType::BINARY)) {
