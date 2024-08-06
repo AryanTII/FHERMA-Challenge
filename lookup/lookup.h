@@ -27,9 +27,6 @@ class LookUp {
     string m_IndexLocation;
     string m_OutputLocation;
     usint array_limit;
-    // Creating evalKeyMap and evalMultKey
-    // map<usint, EvalKey<DCRTPoly>> evalKeyMap;
-    // EvalKey<DCRTPoly> evalMultKey;
 
 public:
     LookUp(string ccLocation, string pubKeyLocation, string multKeyLocation,
