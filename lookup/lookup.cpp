@@ -70,7 +70,7 @@ void LookUp::eval()
     std::cout << " Deadline is August 06... Hurry Up" << std::endl;
 
     std::vector<int64_t> mask_one(array_limit, 1);
-    std::vector<int64_t> mask_field(array_limit, 32768);
+    std::vector<int64_t> mask_field(array_limit, 32769);
     Plaintext m_One = m_cc->MakePackedPlaintext(mask_one);
     Plaintext m_Field = m_cc->MakePackedPlaintext(mask_field);
 
@@ -79,7 +79,8 @@ void LookUp::eval()
         ind_array[iter] = iter;
     }
     Plaintext index_array = m_cc->MakePackedPlaintext(ind_array);
-
+    
+    /*
     // Start of Stage 1: index_sub should have 0 in input index and non-zero otherwise
     // Rotate and subtract index
     auto index_rot = m_IndexC;
@@ -90,8 +91,23 @@ void LookUp::eval()
         index_sub = m_cc->EvalSub(index_sub, index_rot);
     }
     // End of Stage 1: index_sub has 0 in input index and non-zero otherwise
+    */
 
+    // Start of Dummy Testing
+    vector<int64_t> input = {3, 7, 23, 0, 501, 2501, 4031, 6561};
+    Plaintext plaintext = m_cc->MakePackedPlaintext(input);
+    std::cout << "Dummy vector: " << plaintext << std::endl;
+    Ciphertext<DCRTPoly> ciphertext = m_cc->Encrypt(m_PublicKey, plaintext);
+    auto index_sub = ciphertext;
 
+    // index_sub = m_cc->EvalAdd(index_sub, m_Field); // Dummy Scaling
+
+    index_sub = m_cc->EvalSquare(index_sub); // X^2: Level 1 Squaring
+    m_OutputC = index_sub;
+
+    // End of Dummy Testing
+
+    /*
     // Start of Stage 2: index_sub should have 1 in input index and 0 otherwise
     // This is not complete
     // std::vector<Ciphertext<DCRTPoly>> ciphertextVec(5, index_sub);
@@ -105,8 +121,9 @@ void LookUp::eval()
     // 1 - (A-B)^{p-1}
     index_sub = m_cc->EvalSub(m_One, index_sub);
     // End of Stage 2: index_sub has 1 in input index and 0 otherwise
-
-
+    */
+    
+    /*
     // Start of Stage 3: Compute inner product at first location     
     index_sub = m_cc->EvalMult(index_sub, m_InputC);
     auto index_inner = index_sub;
@@ -117,6 +134,7 @@ void LookUp::eval()
     // End of Stage 3: Compute inner product at first location 
 
     m_OutputC = index_inner;
+    */
     std::cout << "Number of levels used in m_OutputC: " << m_OutputC->GetLevel() << std::endl;
 
 }
