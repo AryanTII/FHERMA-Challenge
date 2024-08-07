@@ -1,15 +1,15 @@
 [
     {
-        "significant_slot_numbers": 8,
+        "significant_slot_numbers": 1,
         "runs": [
             {
                 "input": [
                     {
-                        "name": "input",
+                        "name": "array",
                         "value": [101, 20, 33, 46, 55, 68, 7, 80]
                     },
                     {
-                        "name": "index",
+                        "name": "idx",
                         "value": [0]
                     }
                 ],
@@ -18,11 +18,11 @@
             {
                 "input": [
                     {
-                        "name": "input",
+                        "name": "array",
                         "value": [100, 101, 102, 103, 104, 105, 106, 107]
                     },
                     {
-                        "name": "index",
+                        "name": "idx",
                         "value": [3]
                     }
                 ],
