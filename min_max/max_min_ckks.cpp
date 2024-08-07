@@ -1,12 +1,5 @@
 #include "max_min_ckks.h"
 
-/* Truncated vector for testing -------
-std::vector<double> coeff_val({0.0, 1.273238551875655,       0.0, -0.42441020299615195,    0.0, 0.25464294463091813,
-                               0.0, -0.18188441346502052,    0.0, 0.1414621246790797,      0.0, -0.11573812786240627,
-                               0.0});
-
-*/
-
 std::vector<double> coeff_val({0.0, 1.273238551875655,       0.0, -0.42441020299615195,    0.0, 0.25464294463091813,
                                0.0, -0.18188441346502052,    0.0, 0.1414621246790797,      0.0, -0.11573812786240627,
                                0.0, 0.09792859592938771,     0.0, -0.08486774290277588,    0.0, 0.07487956443817181,
@@ -261,49 +254,120 @@ void MaxMinCKKS::initCC()
     m_One = m_cc->MakeCKKSPackedPlaintext(arr_one);
 }
 
-// Function to calculate Chebyshev coefficients for the sign function
-std::vector<double> MaxMinCKKS::ChebyshevCoefficientsSign(int degree, double a, double b) {
-    int N = degree + 1;
-    std::vector<double> coeffs(N);
-    std::vector<double> nodes(N);
-    std::vector<double> values(N);
-
-    for (int i = 0; i < N; ++i) {
-        nodes[i] = cos(M_PI * (2 * i + 1) / (2 * N));
-        nodes[i] = 0.5 * ((b - a) * nodes[i] + (b + a)); // Map to interval [a, b]
-        values[i] = (nodes[i] >= 0 ? 1.0 : -1.0);
-    }
-
-    for (int k = 0; k <= degree; ++k) {
-        double c_k = 0.0;
-        for (int i = 0; i < N; ++i) {
-            c_k += values[i] * cos(k * M_PI * (2 * i + 1) / (2 * N));
-        }
-        c_k *= (k == 0 ? 1.0 : 2.0) / N;
-        coeffs[k] = c_k;
-    }
-
-    return coeffs;
-}
 
 
 
 
-Ciphertext<DCRTPoly> MaxMinCKKS::compare_test(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB)
+Ciphertext<DCRTPoly> MaxMinCKKS::sign(Ciphertext<DCRTPoly> m_InputC)
 {
-    // ----------- Custom code for Chebyshev ---------------------------------------
-    // Calculate Chebyshev coefficients for the sign function
-    int degree = 12;
-    double a = -1, b = 1;
-    std::vector<double> coeffs = ChebyshevCoefficientsSign(degree, a, b);
-    auto result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeffs, -1, 1);
-    std::cout << "Chebyshev coefficients of degree " << degree << " : " << coeffs << std::endl;
-    // ------------ End of custom code ----------------------------------------------
-
-    // Original code from compare function below
-    // auto result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeff_val, -1, 1);
+    auto norm_ciphertext = m_cc->EvalMult(m_InputC, Norm_Value);
+    coeff_val.resize(8); // Set number of coefficients to be used
+    auto result_ciphertext = m_cc->EvalChebyshevSeries(norm_ciphertext, coeff_val, -1, 1);
     return result_ciphertext;
 }
+
+Ciphertext<DCRTPoly> MaxMinCKKS::cond_swap(Ciphertext<DCRTPoly> a, bool is_even){
+
+    auto b = m_cc->EvalRotate(a, 1);
+    auto b_minus_a = m_cc->EvalSub(b, a);
+    auto b_plus_a = m_cc->EvalAdd(b, a);
+    auto c = sign(b_minus_a);
+
+    auto X = m_cc->EvalMult(0.5, m_cc->EvalSub(b_plus_a, m_cc->EvalMult(c, b_minus_a))); // ( c *(b - a) + (b + a) ) / 2
+
+    auto b_ = m_cc->EvalRotate(a, -1);
+    auto b__minus_a = m_cc->EvalSub(b_, a);
+    auto b__plus_a = m_cc->EvalAdd(b_, a);
+    auto c_ = sign(b__minus_a);
+
+    auto Y = m_cc->EvalMult(0.5, m_cc->EvalAdd(b__plus_a, m_cc->EvalMult(c_, b__minus_a))); // ( -c_ *(b_ - a) + (b_ + a) ) / 2
+
+    Ciphertext<DCRTPoly> result;
+
+    if (is_even == true) {
+        result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskOdd), m_cc->EvalMult(Y, m_MaskEven));
+    }
+    else {
+        result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskEven), m_cc->EvalMult(Y, m_MaskOdd));
+        result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), m_cc->EvalMult(result, m_MaskOne));
+    }
+    return result;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Max, when batchsize(array_limit) divides n
+Ciphertext<DCRTPoly> MaxMinCKKS::round(Ciphertext<DCRTPoly> a, int k, bool is_max){
+
+    auto b = m_cc->EvalRotate(a, k);
+    Ciphertext<DCRTPoly> c;
+    if (is_max) {
+        c = compare(a, b);
+    } else {
+        c = compare(b, a);
+    }
+    auto result = m_cc->EvalAdd(m_cc->EvalMult(c, m_cc->EvalSub(b,a)), a); // c*(b - a)+a
+
+    return result;
+}
+
+void MaxMinCKKS::eval_test()
+{
+    m_cc->Enable(ADVANCEDSHE);
+
+    auto a = m_InputC;
+    auto b = m_cc->EvalRotate(a, 1);
+
+    m_OutputC = compare_test(a, b);
+}
+
+void MaxMinCKKS::eval()
+{
+    m_cc->Enable(ADVANCEDSHE);
+
+    auto tempPoly = m_InputC;
+
+    bool is_max = true; // to be change
+    int k_iter = array_limit;
+    while (k_iter >= 1) {
+        k_iter = (int)k_iter / 2;
+        tempPoly = round(tempPoly, k_iter, is_max);
+    }
+    m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); // ctx encypting {{max1, 0, ...., 0}, {max2, 0, ...., 0}, ...}, each vector has length batchsize
+    // print the first element of the each vector (set length 1 for printing only the first max, otherwise rotate in convenient positions {max1, max2, ...} and print
+}
+
+
+void MaxMinCKKS::deserializeOutput()
+{
+
+    if (!Serial::SerializeToFile(m_OutputLocation, m_OutputC, SerType::BINARY))
+    {
+        std::cerr << " Could not serialize output ciphertext" << std::endl;
+    }
+}
+
+
+
+
+
 
 Ciphertext<DCRTPoly> MaxMinCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB)
 {
@@ -477,55 +541,4 @@ Ciphertext<DCRTPoly> MaxMinCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Cipherte
     result_ciphertext = m_cc->EvalMult(m_Half, m_cc->EvalAdd(m_One, result_ciphertext));
     return result_ciphertext;
     */
-}
-
-// Max, when batchsize(array_limit) divides n
-Ciphertext<DCRTPoly> MaxMinCKKS::round(Ciphertext<DCRTPoly> a, int k, bool is_max){
-
-    auto b = m_cc->EvalRotate(a, k);
-    Ciphertext<DCRTPoly> c;
-    if (is_max) {
-        c = compare(a, b);
-    } else {
-        c = compare(b, a);
-    }
-    auto result = m_cc->EvalAdd(m_cc->EvalMult(c, m_cc->EvalSub(b,a)), a); // c*(b - a)+a
-
-    return result;
-}
-
-void MaxMinCKKS::eval_test()
-{
-    m_cc->Enable(ADVANCEDSHE);
-
-    auto a = m_InputC;
-    auto b = m_cc->EvalRotate(a, 1);
-
-    m_OutputC = compare_test(a, b);
-}
-
-void MaxMinCKKS::eval()
-{
-    m_cc->Enable(ADVANCEDSHE);
-
-    auto tempPoly = m_InputC;
-
-    bool is_max = true; // to be change
-    int k_iter = array_limit;
-    while (k_iter >= 1) {
-        k_iter = (int)k_iter / 2;
-        tempPoly = round(tempPoly, k_iter, is_max);
-    }
-    m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); // ctx encypting {{max1, 0, ...., 0}, {max2, 0, ...., 0}, ...}, each vector has length batchsize
-    // print the first element of the each vector (set length 1 for printing only the first max, otherwise rotate in convenient positions {max1, max2, ...} and print
-}
-
-
-void MaxMinCKKS::deserializeOutput()
-{
-
-    if (!Serial::SerializeToFile(m_OutputLocation, m_OutputC, SerType::BINARY))
-    {
-        std::cerr << " Could not serialize output ciphertext" << std::endl;
-    }
 }

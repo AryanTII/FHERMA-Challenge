@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     std::this_thread::sleep_for(std::chrono::seconds(2));
     for (int i = 1; i < argc; i += 2) {
         std::string arg = argv[i];
-        if (arg == "--key_public") {
+        if (arg == "--key_pub") {
             pubKeyLocation = argv[i + 1];
         } else if (arg == "--key_mult") {
             multKeyLocation = argv[i + 1];
@@ -37,11 +37,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-
-    // SortCKKS sortCKKS(ccLocation, pubKeyLocation, multKeyLocation, rotKeyLocation, inputLocation, outputLocation);
-    // sortCKKS.eval_test(); // For testing
-    // sortCKKS.eval();
-    // sortCKKS.deserializeOutput();
 
     MaxMinCKKS maxminCKKS(ccLocation, pubKeyLocation, multKeyLocation, rotKeyLocation, inputLocation, outputLocation);
     maxminCKKS.eval();

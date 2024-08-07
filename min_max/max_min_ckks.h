@@ -37,6 +37,9 @@ public:
     void eval();
     void deserializeOutput();
 
+    Ciphertext<DCRTPoly> sign(Ciphertext<DCRTPoly> m_InputC);
+    Ciphertext<DCRTPoly> cond_swap(Ciphertext<DCRTPoly> m_InputC, bool is_even);
+
     Ciphertext<DCRTPoly> compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB);
     Ciphertext<DCRTPoly> round(Ciphertext<DCRTPoly> m_InputC, int len_comparison_vector, bool is_max);
 
