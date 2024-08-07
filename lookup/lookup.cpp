@@ -59,7 +59,9 @@ void LookUp::initCC()
         std::exit(1);
     }
 
-    array_limit = 2048;
+    array_limit = 8;
+    plaintextModulus = m_cc->GetCryptoParameters()->GetPlaintextModulus();
+    plaintextModulus_log = std::log2(plaintextModulus);
 }
 
 void LookUp::eval()
@@ -86,7 +88,7 @@ void LookUp::eval()
 
 
     // Start of Stage 2: index_sub should have 1 in input index and 0 otherwise
-    for(usint iter = 0; iter < 16; iter++){
+    for(double iter = 0; iter < plaintextModulus_log; iter++){
         index_sub = m_cc->EvalSquare(index_sub);
     }
     // 1 - (A-B)^{p-1}
@@ -102,7 +104,11 @@ void LookUp::eval()
     }
     // End of Stage 3: Compute inner product at first location 
 
-    m_OutputC = index_inner;
+    // Create a mask to extract the first element
+    vector<int64_t> maskVector(array_limit, 0);
+    maskVector[0] = 1;
+    Plaintext maskPlaintext = m_cc->MakePackedPlaintext(maskVector);
+    m_OutputC = m_cc->EvalMult(index_inner, maskPlaintext);
 }
 
 void LookUp::deserializeOutput()

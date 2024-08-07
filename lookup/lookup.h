@@ -27,6 +27,8 @@ class LookUp {
     string m_IndexLocation;
     string m_OutputLocation;
     usint array_limit;
+    PlaintextModulus plaintextModulus;
+    double plaintextModulus_log;
 
 public:
     LookUp(string ccLocation, string pubKeyLocation, string multKeyLocation,

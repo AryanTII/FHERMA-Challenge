@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
         std::string arg = argv[i];
         if (arg == "--cc") {
             ccLocation = argv[i + 1];
-        } else if (arg == "--key_public") {
+        } else if (arg == "--key_pub") {
             pubKeyLocation = argv[i + 1];
         } else if (arg == "--key_mult") {
             multKeyLocation = argv[i + 1];
