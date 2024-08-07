@@ -1,0 +1,34 @@
+[
+    {
+        "significant_slot_numbers": 8,
+        "runs": [
+            {
+                "input": [
+                    {
+                        "name": "input",
+                        "value": [101, 20, 33, 46, 55, 68, 7, 80]
+                    },
+                    {
+                        "name": "index",
+                        "value": [0]
+                    }
+                ],
+                "output": [101]
+            },
+            {
+                "input": [
+                    {
+                        "name": "input",
+                        "value": [100, 101, 102, 103, 104, 105, 106, 107]
+                    },
+                    {
+                        "name": "index",
+                        "value": [3]
+                    }
+                ],
+                "output": [103]
+            }
+        ],
+        "scheme": "BGV"
+    }
+]
