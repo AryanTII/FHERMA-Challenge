@@ -28,6 +28,7 @@ class MaxMinCKKS {
     string m_InputLocation;
     string m_OutputLocation;
     int array_limit;
+    double Norm_Value;
 
 public:
     MaxMinCKKS(string ccLocation, string pubKeyLocation, string multKeyLocation,
@@ -39,11 +40,11 @@ public:
 
     Ciphertext<DCRTPoly> sign(Ciphertext<DCRTPoly> m_InputC);
     Ciphertext<DCRTPoly> cond_swap(Ciphertext<DCRTPoly> m_InputC, bool is_even);
+    Ciphertext<DCRTPoly> compare_div(const Ciphertext<DCRTPoly>& a, const Ciphertext<DCRTPoly>& b, double epsilon);
+
 
     Ciphertext<DCRTPoly> compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB);
     Ciphertext<DCRTPoly> round(Ciphertext<DCRTPoly> m_InputC, int len_comparison_vector, bool is_max);
 
-    vector<double> ChebyshevCoefficientsSign(int degree, double a, double b);
-    Ciphertext<DCRTPoly> compare_test(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB);
-    void eval_test();
+
 };

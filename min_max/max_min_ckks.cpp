@@ -226,6 +226,9 @@ void MaxMinCKKS::initCC()
 
     array_limit = 8; // 2048
     // array_limit = m_cc->GetEncodingParams()->GetBatchSize();
+    Norm_Value = 1.0/255;
+
+
 
     // ------------- Generation of Masks ------------------------------
     std::vector<double> mask_lookup(array_limit); //10...0 10...0 ... 10...0
@@ -255,9 +258,6 @@ void MaxMinCKKS::initCC()
 }
 
 
-
-
-
 Ciphertext<DCRTPoly> MaxMinCKKS::sign(Ciphertext<DCRTPoly> m_InputC)
 {
     auto norm_ciphertext = m_cc->EvalMult(m_InputC, Norm_Value);
@@ -268,6 +268,8 @@ Ciphertext<DCRTPoly> MaxMinCKKS::sign(Ciphertext<DCRTPoly> m_InputC)
 
 Ciphertext<DCRTPoly> MaxMinCKKS::cond_swap(Ciphertext<DCRTPoly> a, bool is_even){
 
+    return a;
+    /*
     auto b = m_cc->EvalRotate(a, 1);
     auto b_minus_a = m_cc->EvalSub(b, a);
     auto b_plus_a = m_cc->EvalAdd(b, a);
@@ -292,12 +294,38 @@ Ciphertext<DCRTPoly> MaxMinCKKS::cond_swap(Ciphertext<DCRTPoly> a, bool is_even)
         result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), m_cc->EvalMult(result, m_MaskOne));
     }
     return result;
+    */
 }
 
 
 
 
+Ciphertext<DCRTPoly> MaxMinCKKS::compare_div(const Ciphertext<DCRTPoly>& a, 
+                             const Ciphertext<DCRTPoly>& b, 
+                             double epsilon = 0.01) {
+    // Compute a - b
+    auto diff = m_cc->EvalSub(a, b);
+    
+    // Compute |a - b| approximately
+    auto diff_squared = m_cc->EvalMult(diff, diff);
+    
+    // auto abs_diff = m_cc->EvalSqrt(diff_squared);
+    auto abs_diff = m_cc->EvalChebyshevFunction([](double x) -> double { return std::sqrt(x); }, diff_squared, 0, 256, 8);
+    
+    // Add epsilon to avoid division by zero
+    auto denominator = m_cc->EvalAdd(abs_diff, epsilon);
+    
+    // Approximate division of denominator
+    auto inv_denom = m_cc->EvalDivide(denominator, -1, 1, 8);
 
+    // Compute (a - b) / (|a - b| + ε)
+    auto result = m_cc->EvalMult(diff, inv_denom);
+
+    // // Compute (a - b) / (|a - b| + ε)
+    // auto result = m_cc->EvalDiv(diff, denominator);
+    
+    return result;
+}
 
 
 
@@ -328,15 +356,6 @@ Ciphertext<DCRTPoly> MaxMinCKKS::round(Ciphertext<DCRTPoly> a, int k, bool is_ma
     return result;
 }
 
-void MaxMinCKKS::eval_test()
-{
-    m_cc->Enable(ADVANCEDSHE);
-
-    auto a = m_InputC;
-    auto b = m_cc->EvalRotate(a, 1);
-
-    m_OutputC = compare_test(a, b);
-}
 
 void MaxMinCKKS::eval()
 {

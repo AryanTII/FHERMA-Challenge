@@ -3,29 +3,54 @@
 
 int main() {
 
-    // CKKS parameters
+    // CKKS parameters    
     uint32_t multDepth = 29;
-    uint32_t scaleModSize = 59;
+    uint32_t scaleMod = 59;
+    usint firstMod = 60;
+    ScalingTechnique rescaleTech = FLEXIBLEAUTO; //Custom
+    // ----------- Alternate ------------------- 
+    // uint32_t scaleMod = 78;//59;
+    // usint firstMod = 89;//60;
+    // ScalingTechnique rescaleTech = FIXEDAUTO; //Custom
+    // ----------- Alternate -------------------
     uint32_t batchSize = 65536;
+    // uint32_t levelsAvailableAfterBootstrap = 10; 
+    // usint depth = levelsAvailableAfterBootstrap + multDepth;
+    std::vector<uint32_t> levelBudget = {4, 4};
+    // std::vector<uint32_t> levelBudget = {2, 2};
+    std::vector<uint32_t> bsgsDim = {0, 0};
 
     // Setup CKKS parameters
     CCParams<CryptoContextCKKSRNS> parameters;
-    parameters.SetMultiplicativeDepth(multDepth);
-    parameters.SetScalingModSize(scaleModSize);
     parameters.SetBatchSize(batchSize);
-
+    parameters.SetScalingModSize(scaleMod);
+    parameters.SetScalingTechnique(rescaleTech);
+    parameters.SetFirstModSize(firstMod);
+    parameters.SetMultiplicativeDepth(multDepth); //Initial
+    // parameters.SetMultiplicativeDepth(depth);
+    
     // Generate crypto context
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
-    cc->Enable(PKESchemeFeature::PKE);
-    cc->Enable(PKESchemeFeature::FHE);
-    cc->Enable(PKESchemeFeature::LEVELEDSHE);
-    cc->Enable(PKESchemeFeature::ADVANCEDSHE);
+    cc->Enable(PKE);
+    cc->Enable(KEYSWITCH);
+    cc->Enable(LEVELEDSHE);
+    cc->Enable(ADVANCEDSHE);
+    cc->Enable(FHE);
+
+    usint ringDim = cc->GetRingDimension();
+    // This is the maximum number of slots that can be used for full packing.
+    usint numSlots = ringDim / 2;
+    cout << "CKKS scheme is using ring dimension " << ringDim << endl << endl;
+
+    // cc->EvalBootstrapSetup(levelBudget); //Simple
+    cc->EvalBootstrapSetup(levelBudget, bsgsDim, numSlots); //Advanced
 
     // Key generation
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
     cc->EvalAtIndexKeyGen(keys.secretKey, {1});
     cc->EvalRotateKeyGen(keys.secretKey, {1, -1});
+    cc->EvalBootstrapKeyGen(keys.secretKey, numSlots);
 
     // Serialize into binary files
     std::cout << "Serializing Relevant Keys and Inputs!" << std::endl;
@@ -65,12 +90,11 @@ int main() {
     // ------------------- Dummy Input for local testing -------------------
     // uint32_t batchSize = 8;
     // Input Vector
-    vector<double> input = {3.0, 1.0, 4.0, 1.5, 5.0, 9.0, 2.0, 6.0};
-
+    vector<double> input = {3, 1, 4, 15, 5, 9, 2, 6};
     Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input);
     std::cout << "Input vector: " << plaintext << std::endl;
-
     Ciphertext<DCRTPoly> ciphertext = cc->Encrypt(keys.publicKey, plaintext);
+    std::cout << "Desired Output: 15" << std::endl;
 
     // // Serialize input
     if (!Serial::SerializeToFile(inputLocation, ciphertext, SerType::BINARY)) {
