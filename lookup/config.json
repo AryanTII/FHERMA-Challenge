@@ -1,0 +1,11 @@
+{
+    "indexes_for_rotation_key": [
+      1, -1
+    ],
+    "mult_depth": 5,
+    "plaintext_modulus": 65537,
+    "ring_dimension": 32768,
+    "batch_size": 4096,
+    "max_relin_sk_deg": 5,
+    "scheme": "BFV"
+  }
