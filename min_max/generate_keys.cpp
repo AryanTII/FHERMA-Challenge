@@ -49,7 +49,7 @@ int main() {
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
     cc->EvalAtIndexKeyGen(keys.secretKey, {1});
-    cc->EvalRotateKeyGen(keys.secretKey, {1, -1});
+    cc->EvalRotateKeyGen(keys.secretKey, {1, -1, 4});
     cc->EvalBootstrapKeyGen(keys.secretKey, numSlots);
 
     // Serialize into binary files

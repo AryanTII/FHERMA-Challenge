@@ -73,8 +73,8 @@ int main() {
 
     std::cout.precision(2);
     
-    std::cout << "Input  Plaintext:" << std::fixed << std::setprecision(2) << plaintextInput << std::endl;
-    std::cout << "Output Plaintext:" << std::fixed << std::setprecision(2) << plaintextOutput << std::endl;
+    std::cout << "Input  Plaintext:" << std::fixed << std::setprecision(5) << plaintextInput << std::endl;
+    std::cout << "Output Plaintext:" << std::fixed << std::setprecision(5) << plaintextOutput << std::endl;
 
     std::cout << "Result validation completed!" << std::endl;
 

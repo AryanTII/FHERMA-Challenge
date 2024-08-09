@@ -261,7 +261,7 @@ void MaxMinCKKS::initCC()
 Ciphertext<DCRTPoly> MaxMinCKKS::sign(Ciphertext<DCRTPoly> m_InputC)
 {
     auto norm_ciphertext = m_cc->EvalMult(m_InputC, Norm_Value);
-    coeff_val.resize(8); // Set number of coefficients to be used
+    // coeff_val.resize(100); // Set number of coefficients to be used
     auto result_ciphertext = m_cc->EvalChebyshevSeries(norm_ciphertext, coeff_val, -1, 1);
     return result_ciphertext;
 }
@@ -303,28 +303,42 @@ Ciphertext<DCRTPoly> MaxMinCKKS::cond_swap(Ciphertext<DCRTPoly> a, bool is_even)
 Ciphertext<DCRTPoly> MaxMinCKKS::compare_div(const Ciphertext<DCRTPoly>& a, 
                              const Ciphertext<DCRTPoly>& b, 
                              double epsilon = 0.01) {
-    // Compute a - b
-    auto diff = m_cc->EvalSub(a, b);
-    
-    // Compute |a - b| approximately
-    auto diff_squared = m_cc->EvalMult(diff, diff);
-    
-    // auto abs_diff = m_cc->EvalSqrt(diff_squared);
-    auto abs_diff = m_cc->EvalChebyshevFunction([](double x) -> double { return std::sqrt(x); }, diff_squared, 0, 256, 8);
-    
-    // Add epsilon to avoid division by zero
-    auto denominator = m_cc->EvalAdd(abs_diff, epsilon);
-    
-    // Approximate division of denominator
-    auto inv_denom = m_cc->EvalDivide(denominator, -1, 1, 8);
 
-    // Compute (a - b) / (|a - b| + ε)
-    auto result = m_cc->EvalMult(diff, inv_denom);
+    // Compute a + b
+    auto sum_cipher = m_cc->EvalAdd(a, b);
+
+    // Compute a - b
+    auto diff_cipher = m_cc->EvalSub(a, b);
+
+    auto abs_diff = m_cc->EvalChebyshevFunction([](double x) -> double { return std::abs(x); }, diff_cipher, -255, 255, 100);
+
+    auto result = m_cc->EvalMult(0.5, m_cc->EvalAdd(sum_cipher, abs_diff));
+
+    return result;
+  
+    // // Normalization
+    // // diff = m_cc->EvalMult(diff, Norm_Value);
+
+    // // Compute |a - b| approximately
+    // auto diff_squared = m_cc->EvalMult(diff, diff);
+    
+    // // auto abs_diff = m_cc->EvalSqrt(diff_squared);
+    // auto abs_diff = m_cc->EvalChebyshevFunction([](double x) -> double { return 1/std::sqrt(x); }, diff_squared, 0, 65536, 100);
+    // return abs_diff;
+
+    // // Add epsilon to avoid division by zero
+    // auto denominator = m_cc->EvalAdd(abs_diff, epsilon);
+    
+    // // Approximate division of denominator
+    // auto inv_denom = m_cc->EvalDivide(denominator, -1, 1, 8);
 
     // // Compute (a - b) / (|a - b| + ε)
-    // auto result = m_cc->EvalDiv(diff, denominator);
+    // auto result = m_cc->EvalMult(diff, inv_denom);
+
+    // // // Compute (a - b) / (|a - b| + ε)
+    // // auto result = m_cc->EvalDiv(diff, denominator);
     
-    return result;
+    // return result;
 }
 
 
@@ -363,14 +377,29 @@ void MaxMinCKKS::eval()
 
     auto tempPoly = m_InputC;
 
+    
+
+    tempPoly = m_cc->EvalRotate(tempPoly,4);
+    // auto diff_cipher = m_cc->EvalSub(m_InputC, tempPoly);
+    // auto sign_cipher = sign(diff_cipher);
+
+    auto sign_cipher = compare_div(m_InputC, tempPoly);
+
+    tempPoly = sign_cipher;
+
+    m_OutputC = tempPoly;
+
+    std::cout << "Number of levels used out of 29: " << m_OutputC->GetLevel() << std::endl;
+
+    /*
     bool is_max = true; // to be change
     int k_iter = array_limit;
     while (k_iter >= 1) {
         k_iter = (int)k_iter / 2;
         tempPoly = round(tempPoly, k_iter, is_max);
     }
-    m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); // ctx encypting {{max1, 0, ...., 0}, {max2, 0, ...., 0}, ...}, each vector has length batchsize
-    // print the first element of the each vector (set length 1 for printing only the first max, otherwise rotate in convenient positions {max1, max2, ...} and print
+    m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); 
+    */
 }
 
 
