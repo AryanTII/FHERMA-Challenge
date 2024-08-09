@@ -1,12 +1,5 @@
 #include "sort_ckks.h"
 
-/* Truncated vector for testing -------
-std::vector<double> coeff_val({0.0, 1.273238551875655,       0.0, -0.42441020299615195,    0.0, 0.25464294463091813,
-                               0.0, -0.18188441346502052,    0.0, 0.1414621246790797,      0.0, -0.11573812786240627,
-                               0.0});
-                               
-*/
-
 std::vector<double> coeff_val({0.0, 1.273238551875655,       0.0, -0.42441020299615195,    0.0, 0.25464294463091813,
                                0.0, -0.18188441346502052,    0.0, 0.1414621246790797,      0.0, -0.11573812786240627,
                                0.0, 0.09792859592938771,     0.0, -0.08486774290277588,    0.0, 0.07487956443817181,
@@ -233,14 +226,17 @@ void SortCKKS::initCC()
 
     array_limit = 8; // 2048
     // array_limit = m_cc->GetEncodingParams()->GetBatchSize();
+    Norm_Value = 1.0/255;
 
     // ------------- Generation of Masks ------------------------------
     std::vector<double> mask_odd(array_limit);
     std::vector<double> mask_even(array_limit);
     std::vector<double> mask_zero(array_limit);
     std::vector<double> mask_one(array_limit);
-    std::vector<double> arr_half(array_limit);
+    std::vector<double> arr_half(array_limit); // Probably std::vector<double> arr_half(array_limit, 0.5) for efficiency
     std::vector<double> arr_one(array_limit);
+    std::vector<double> m_norm(array_limit);
+    // double input_norm = 1.0/255; 
 
     for (int i = 0; i < array_limit; ++i) 
     {
@@ -263,73 +259,199 @@ void SortCKKS::initCC()
         }
         arr_half[i] = 0.5;
         arr_one[i] = 1;
+        // m_norm[i] = input_norm;
     }
 
-    // Binary Masks
+
     m_MaskOdd  = m_cc->MakeCKKSPackedPlaintext(mask_odd);  //10101...0
     m_MaskEven = m_cc->MakeCKKSPackedPlaintext(mask_even); //01010...1
     m_MaskZero = m_cc->MakeCKKSPackedPlaintext(mask_zero); //10000...1
     m_MaskOne  = m_cc->MakeCKKSPackedPlaintext(mask_one);  //01111...0
-    m_Half = m_cc->MakeCKKSPackedPlaintext(arr_half);
-    m_One = m_cc->MakeCKKSPackedPlaintext(arr_one);
+    m_Half = m_cc->MakeCKKSPackedPlaintext(arr_half); // 0.5 0.5 0.5 ... 0.5
+    m_One = m_cc->MakeCKKSPackedPlaintext(arr_one); // 1 1 1 ... 1
+    // m_Norm = m_cc->MakeCKKSPackedPlaintext(m_norm); 
+
+    m_MaskOdd->SetLength(array_limit);
+    m_MaskEven->SetLength(array_limit);
+    m_MaskZero->SetLength(array_limit);
+    m_MaskOne->SetLength(array_limit);
+    m_Half->SetLength(array_limit);
+    m_One->SetLength(array_limit);
+    // m_Norm->SetLength(array_limit);
 }
 
 
-// Function to calculate Chebyshev coefficients for the sign function
-std::vector<double> SortCKKS::ChebyshevCoefficientsSign(int degree, double a, double b) {
-    int N = degree + 1;
-    std::vector<double> coeffs(N);
-    std::vector<double> nodes(N);
-    std::vector<double> values(N);
 
-    for (int i = 0; i < N; ++i) {
-        nodes[i] = cos(M_PI * (2 * i + 1) / (2 * N));
-        nodes[i] = 0.5 * ((b - a) * nodes[i] + (b + a)); // Map to interval [a, b]
-        values[i] = (nodes[i] >= 0 ? 1.0 : -1.0);
+Ciphertext<DCRTPoly> SortCKKS::sign(Ciphertext<DCRTPoly> m_InputC)
+{
+    auto norm_ciphertext = m_cc->EvalMult(m_InputC, Norm_Value);
+    coeff_val.resize(8); // Set number of coefficients to be used
+    auto result_ciphertext = m_cc->EvalChebyshevSeries(norm_ciphertext, coeff_val, -1, 1);
+    return result_ciphertext;
+}
+
+Ciphertext<DCRTPoly> SortCKKS::cond_swap(Ciphertext<DCRTPoly> a, bool is_even){
+
+    auto b = m_cc->EvalRotate(a, 1);
+    auto b_minus_a = m_cc->EvalSub(b, a);
+    auto b_plus_a = m_cc->EvalAdd(b, a);
+    auto c = sign(b_minus_a);
+
+    auto X = m_cc->EvalMult(0.5, m_cc->EvalSub(b_plus_a, m_cc->EvalMult(c, b_minus_a))); // ( c *(b - a) + (b + a) ) / 2
+
+    auto b_ = m_cc->EvalRotate(a, -1);
+    auto b__minus_a = m_cc->EvalSub(b_, a);
+    auto b__plus_a = m_cc->EvalAdd(b_, a);
+    auto c_ = sign(b__minus_a);
+
+    auto Y = m_cc->EvalMult(0.5, m_cc->EvalAdd(b__plus_a, m_cc->EvalMult(c_, b__minus_a))); // ( -c_ *(b_ - a) + (b_ + a) ) / 2
+
+    Ciphertext<DCRTPoly> result;
+
+    if (is_even == true) {
+        result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskOdd), m_cc->EvalMult(Y, m_MaskEven));
     }
-
-    for (int k = 0; k <= degree; ++k) {
-        double c_k = 0.0;
-        for (int i = 0; i < N; ++i) {
-            c_k += values[i] * cos(k * M_PI * (2 * i + 1) / (2 * N));
-        }
-        c_k *= (k == 0 ? 1.0 : 2.0) / N;
-        coeffs[k] = c_k;
+    else {
+        result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskEven), m_cc->EvalMult(Y, m_MaskOdd));
+        result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), m_cc->EvalMult(result, m_MaskOne));
     }
-
-    return coeffs;
+    return result;
 }
 
 
+
+
+void SortCKKS::eval_test()
+{
+    m_cc->Enable(ADVANCEDSHE);
+
+    auto tempPoly = m_InputC;
+    std::cout << "Number of levels used out of 29: " << tempPoly->GetLevel() << std::endl;
+
+    // // Bootstrapping
+    //  auto tempPolyNew = m_cc->EvalBootstrap(tempPoly);
+    // std::cout << "Number of levels used out of 29 (New): " << tempPolyNew->GetLevel() << std::endl;
+
+    tempPoly = cond_swap(tempPoly, true);
+    std::cout << "Number of levels used: " << tempPoly->GetLevel() << std::endl;
+
+    tempPoly = cond_swap(tempPoly, false); //Works upto here for coeff size=actual
+    std::cout << "Number of levels used out of 29: " << tempPoly->GetLevel() << std::endl;
+
+    // Sorted vector
+    m_OutputC = tempPoly;
+}
+
+
+
+
+void SortCKKS::eval()
+{
+    m_cc->Enable(ADVANCEDSHE);
+
+    auto tempPoly = m_InputC;
+
+    for(int iter = 0; iter < array_limit/2; iter++){
+        tempPoly = swap(tempPoly, true);
+        tempPoly = swap(tempPoly, false);
+    }
+
+    // Sorted vector
+    m_OutputC = tempPoly;
+}
+
+void SortCKKS::deserializeOutput()
+{
+
+    if (!Serial::SerializeToFile(m_OutputLocation, m_OutputC, SerType::BINARY))
+    {
+        std::cerr << " Could not serialize output ciphertext" << std::endl;
+    }
+}
+
+
+
+// ---------  NOT USED ANYMORE ---------------------
+
+Ciphertext<DCRTPoly> SortCKKS::swap(Ciphertext<DCRTPoly> a, bool is_even){
+
+
+    // For testing cond_swap
+    auto b = m_cc->EvalRotate(a, 1);
+    return b;
+    auto b_minus_a = m_cc->EvalSub(b, a);
+    auto b_plus_a = m_cc->EvalAdd(b, a);
+    auto c = sign(b_minus_a);
+
+    auto X = m_cc->EvalMult(m_Half, m_cc->EvalSub(b_plus_a, m_cc->EvalMult(c, b_minus_a))); // ( c *(b - a) + (b + a) ) / 2
+
+    auto b_ = m_cc->EvalRotate(a, -1);
+    auto b__minus_a = m_cc->EvalSub(b_, a);
+    auto b__plus_a = m_cc->EvalAdd(b_, a);
+    auto c_ = sign(b__minus_a);
+
+    auto Y = m_cc->EvalMult(m_Half, m_cc->EvalAdd(b__plus_a, m_cc->EvalMult(c_, b__minus_a))); // ( -c_ *(b_ - a) + (b_ + a) ) / 2
+
+    Ciphertext<DCRTPoly> result;
+
+    if (is_even == true) {
+        result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskOdd), m_cc->EvalMult(Y, m_MaskEven));
+    }
+    else {
+        result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskEven), m_cc->EvalMult(Y, m_MaskOdd));
+        result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), m_cc->EvalMult(result, m_MaskOne));
+    }
+    return result;
+
+    // // Actual content below
+
+    // auto b = m_cc->EvalRotate(a, 1);
+    // auto c = compare(a, b);
+
+    // auto X = m_cc->EvalAdd(m_cc->EvalMult(c, m_cc->EvalSub(b,a)), a); // c*(b - a)+a
+    
+    // auto b_ = m_cc->EvalRotate(a, -1);
+    // auto c_ = compare(b_, a);
+    // auto Y  = m_cc->EvalAdd(m_cc->EvalMult(c_, m_cc->EvalSub(b_, a)), a);  // c_*(b_ - a)+a
+    
+    // Ciphertext<DCRTPoly> result;
+
+    // if (is_even == true) {
+    //     result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskOdd), m_cc->EvalMult(Y, m_MaskEven));
+    // }
+    // else {
+    //     result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskEven), m_cc->EvalMult(Y, m_MaskOdd));
+    //     result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), m_cc->EvalMult(result, m_MaskOne));
+    // }
+    // return result;
+}
 
 
 Ciphertext<DCRTPoly> SortCKKS::compare_test(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB)
 {
-    // ----------- Custom code for Chebyshev ---------------------------------------
-    // Calculate Chebyshev coefficients for the sign function
-    int degree = 12;
-    double a = -1, b = 1;
-    std::vector<double> coeffs = ChebyshevCoefficientsSign(degree, a, b);
-    auto result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeffs, -1, 1);
-    std::cout << "Chebyshev coefficients of degree " << degree << " : " << coeffs << std::endl;
-    // ------------ End of custom code ----------------------------------------------
+    auto input_ciphertext = m_cc->EvalSub(m_InputA, m_InputB);
+    auto norm_ciphertext = m_cc->EvalMult(input_ciphertext, m_Norm);
+    
+    double range_a = -1;
+    double range_b = 1;
 
-    // Original code from compare function below
-    // auto result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeff_val, -1, 1);
+    auto result_ciphertext = m_cc->EvalChebyshevSeries(norm_ciphertext, coeff_val, range_a, range_b);
+    
+    result_ciphertext = m_cc->EvalMult(m_Half, m_cc->EvalAdd(m_One, result_ciphertext));
     return result_ciphertext;
 }
 
+
 Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB)
 {
-    /*
-    // ------------- Start of Dummy ------------------------------
-    vector<double> result = {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0};
-    Plaintext result_plaintext = m_cc->MakeCKKSPackedPlaintext(result);
-    Ciphertext<DCRTPoly> result_ciphertext = m_cc->Encrypt(m_PublicKey, result_plaintext);
-    return result_ciphertext;
-    */
- 
-    Ciphertext<DCRTPoly> result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeff_val, -1, 1);
+    auto input_ciphertext = m_cc->EvalSub(m_InputA, m_InputB);
+    auto norm_ciphertext = m_cc->EvalMult(input_ciphertext, m_Norm);
+
+    // Input range
+    double range_a = -1;
+    double range_b = 1;
+
+    auto result_ciphertext = m_cc->EvalChebyshevSeries(norm_ciphertext, coeff_val, range_a, range_b);
 
     std::vector<Ciphertext<DCRTPoly>> t(1024);
     int l = 512;
@@ -493,59 +615,28 @@ Ciphertext<DCRTPoly> SortCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext
 
 }
 
-Ciphertext<DCRTPoly> SortCKKS::swap(Ciphertext<DCRTPoly> a, bool is_even){
 
-    auto b = m_cc->EvalRotate(a, 1);
-    auto c = compare(a, b);
+// Function to calculate Chebyshev coefficients for the sign function
+std::vector<double> SortCKKS::ChebyshevCoefficientsSign(int degree, double a, double b) {
+    int N = degree + 1;
+    std::vector<double> coeffs(N);
+    std::vector<double> nodes(N);
+    std::vector<double> values(N);
 
-    auto X = m_cc->EvalAdd(m_cc->EvalMult(c, m_cc->EvalSub(b,a)), a); // c*(b - a)+a
-    
-    auto b_ = m_cc->EvalRotate(a, -1);
-    auto c_ = compare(b_, a);
-    auto Y  = m_cc->EvalAdd(m_cc->EvalMult(c_, m_cc->EvalSub(b_, a)), a);  // c_*(b_ - a)+a
-    
-    Ciphertext<DCRTPoly> result;
-
-    if (is_even == true) {
-        result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskOdd), m_cc->EvalMult(Y, m_MaskEven));
-    }
-    else {
-        result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskEven), m_cc->EvalMult(Y, m_MaskOdd));
-        result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), m_cc->EvalMult(result, m_MaskOne));
-    }
-    return result;
-}
-
-void SortCKKS::eval_test()
-{
-    m_cc->Enable(ADVANCEDSHE);
-
-    auto a = m_InputC;
-    auto b = m_cc->EvalRotate(a, 1);
-
-    m_OutputC = compare_test(a, b);
-}
-
-void SortCKKS::eval()
-{
-    m_cc->Enable(ADVANCEDSHE);
-
-    auto tempPoly = m_InputC;
-
-    for(int iter = 0; iter < array_limit/2; iter++){
-        tempPoly = swap(tempPoly, true);
-        tempPoly = swap(tempPoly, false);
+    for (int i = 0; i < N; ++i) {
+        nodes[i] = cos(M_PI * (2 * i + 1) / (2 * N));
+        nodes[i] = 0.5 * ((b - a) * nodes[i] + (b + a)); // Map to interval [a, b]
+        values[i] = (nodes[i] >= 0 ? 1.0 : -1.0);
     }
 
-    // Sorted vector
-    m_OutputC = tempPoly;
-}
-
-void SortCKKS::deserializeOutput()
-{
-
-    if (!Serial::SerializeToFile(m_OutputLocation, m_OutputC, SerType::BINARY))
-    {
-        std::cerr << " Could not serialize output ciphertext" << std::endl;
+    for (int k = 0; k <= degree; ++k) {
+        double c_k = 0.0;
+        for (int i = 0; i < N; ++i) {
+            c_k += values[i] * cos(k * M_PI * (2 * i + 1) / (2 * N));
+        }
+        c_k *= (k == 0 ? 1.0 : 2.0) / N;
+        coeffs[k] = c_k;
     }
+
+    return coeffs;
 }

@@ -3,29 +3,54 @@
 
 int main() {
 
-    // CKKS parameters
+    // CKKS parameters    
     uint32_t multDepth = 29;
-    uint32_t scaleModSize = 59;
+    uint32_t scaleMod = 59;
+    usint firstMod = 60;
+    ScalingTechnique rescaleTech = FLEXIBLEAUTO; //Custom
+    // ----------- Alternate ------------------- 
+    // uint32_t scaleMod = 78;//59;
+    // usint firstMod = 89;//60;
+    // ScalingTechnique rescaleTech = FIXEDAUTO; //Custom
+    // ----------- Alternate -------------------
     uint32_t batchSize = 65536;
+    uint32_t levelsAvailableAfterBootstrap = 10; 
+    usint depth = levelsAvailableAfterBootstrap + multDepth;
+    // std::vector<uint32_t> levelBudget = {4, 4};
+    std::vector<uint32_t> levelBudget = {2, 2};
+    std::vector<uint32_t> bsgsDim = {0, 0};
 
     // Setup CKKS parameters
     CCParams<CryptoContextCKKSRNS> parameters;
-    parameters.SetMultiplicativeDepth(multDepth);
-    parameters.SetScalingModSize(scaleModSize);
     parameters.SetBatchSize(batchSize);
-
+    parameters.SetScalingModSize(scaleMod);
+    parameters.SetScalingTechnique(rescaleTech);
+    parameters.SetFirstModSize(firstMod);
+    // parameters.SetMultiplicativeDepth(multDepth); //Initial
+    parameters.SetMultiplicativeDepth(depth);
+    
     // Generate crypto context
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
-    cc->Enable(PKESchemeFeature::PKE);
-    cc->Enable(PKESchemeFeature::FHE);
-    cc->Enable(PKESchemeFeature::LEVELEDSHE);
-    cc->Enable(PKESchemeFeature::ADVANCEDSHE);
+    cc->Enable(PKE);
+    cc->Enable(KEYSWITCH);
+    cc->Enable(LEVELEDSHE);
+    cc->Enable(ADVANCEDSHE);
+    cc->Enable(FHE);
+
+    usint ringDim = cc->GetRingDimension();
+    // This is the maximum number of slots that can be used for full packing.
+    usint numSlots = ringDim / 2;
+    cout << "CKKS scheme is using ring dimension " << ringDim << endl << endl;
+
+    // cc->EvalBootstrapSetup(levelBudget); //Simple
+    cc->EvalBootstrapSetup(levelBudget, bsgsDim, numSlots); //Advanced
 
     // Key generation
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
     cc->EvalAtIndexKeyGen(keys.secretKey, {1});
     cc->EvalRotateKeyGen(keys.secretKey, {1, -1});
+    cc->EvalBootstrapKeyGen(keys.secretKey, numSlots);
 
     // Serialize into binary files
     std::cout << "Serializing Relevant Keys and Inputs!" << std::endl;
@@ -79,6 +104,22 @@ int main() {
     }
     
     std::cout << "Serialization completed successfully!" << std::endl;
+
+
+    // -------------------------- Dummy Bootstrap testing -------------------
+    std::cout << "Number of levels used out of 29: " << ciphertext->GetLevel() << std::endl;
+
+    auto ciphertext1 = cc->EvalMult(ciphertext, ciphertext);
+    std::cout << "Number of levels used out of 29: " << ciphertext1->GetLevel() << std::endl;
+
+    auto ciphertext2 = cc->EvalMult(ciphertext1, ciphertext1);
+    std::cout << "Number of levels used out of 29: " << ciphertext2->GetLevel() << std::endl;
+
+    // Bootstrapping
+    // auto tempPolyNew = cc->EvalBootstrap(ciphertext2);
+    // std::cout << "Number of levels used out of 29 (New): " << tempPolyNew->GetLevel() << std::endl;
+
+    // ------------------- End of Dummy Bootstrap testing -------------------
 
     return 0;
 }
