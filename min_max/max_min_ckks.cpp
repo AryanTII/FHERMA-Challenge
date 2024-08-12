@@ -226,79 +226,78 @@ void MaxMinCKKS::initCC()
 
     array_limit = 8; // 2048
     // array_limit = m_cc->GetEncodingParams()->GetBatchSize();
-    Norm_Value = 1.0/255;
+    Norm_Value = 255.0;
+    Norm_Value_Inv = 1.0/Norm_Value;
 
+    std::vector<double> arr_half(array_limit, 0.5);
+    std::vector<double> arr_one(array_limit, 1.0);
+    std::vector<double> mask_lookup(array_limit, 0); //10...0
+    mask_lookup[0]  = Norm_Value; // Included de-normalization and hence changed from 1
 
-
-    // ------------- Generation of Masks ------------------------------
-    std::vector<double> mask_lookup(array_limit); //10...0 10...0 ... 10...0
-    std::vector<double> arr_half(array_limit);
-    std::vector<double> arr_one(array_limit);
-    for (int i = 0; i < array_limit; ++i)
-    {
-        arr_half[i] = 0.5;
-        arr_one[i] = 1;
-    }
-
-    // for (int i = 0; i < n; ++i) {
-    //     if ( (i % array_limit) == 0) {
-    //         mask_lookup[i]  = 1;
-    //     }
-    //     else {
-    //         mask_lookup[i]  = 0;
-    //     }
-    // }
-    mask_lookup[0]  = 1;
-    for (int i = 0; i < array_limit; ++i) {
-        mask_lookup[i]  = 1;
-    }
-    m_MaskLookup  = m_cc->MakeCKKSPackedPlaintext(mask_lookup);
     m_Half = m_cc->MakeCKKSPackedPlaintext(arr_half);
     m_One = m_cc->MakeCKKSPackedPlaintext(arr_one);
+    m_MaskLookup  = m_cc->MakeCKKSPackedPlaintext(mask_lookup);
 }
+
+
+
+
+Ciphertext<DCRTPoly> MaxMinCKKS::cond_swap(const Ciphertext<DCRTPoly>& a, 
+                             const Ciphertext<DCRTPoly>& b)
+{
+    return b;
+}
+
+
+
+
+
+void MaxMinCKKS::eval()
+{
+    // Normalizing
+    auto tempPoly = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
+    int k_iter = array_limit;
+
+    while (k_iter > 1) {
+        k_iter = k_iter >> 1;
+        std::cout << "Value of k: " << k_iter << std::endl;
+        auto rot_cipher = m_cc->EvalRotate(tempPoly, k_iter);
+        tempPoly = cond_swap(tempPoly, rot_cipher);
+
+        if(k_iter==4){break;} // Testing one iteration
+    }
+    
+    m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup);
+}
+
+
+void MaxMinCKKS::deserializeOutput()
+{
+
+    if (!Serial::SerializeToFile(m_OutputLocation, m_OutputC, SerType::BINARY))
+    {
+        std::cerr << " Could not serialize output ciphertext" << std::endl;
+    }
+}
+
+
+
+
+
+
+
+
+
+
 
 
 Ciphertext<DCRTPoly> MaxMinCKKS::sign(Ciphertext<DCRTPoly> m_InputC)
 {
-    auto norm_ciphertext = m_cc->EvalMult(m_InputC, Norm_Value);
+    auto norm_ciphertext = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
     // coeff_val.resize(100); // Set number of coefficients to be used
     auto result_ciphertext = m_cc->EvalChebyshevSeries(norm_ciphertext, coeff_val, -1, 1);
     return result_ciphertext;
 }
-
-Ciphertext<DCRTPoly> MaxMinCKKS::cond_swap(Ciphertext<DCRTPoly> a, bool is_even){
-
-    return a;
-    /*
-    auto b = m_cc->EvalRotate(a, 1);
-    auto b_minus_a = m_cc->EvalSub(b, a);
-    auto b_plus_a = m_cc->EvalAdd(b, a);
-    auto c = sign(b_minus_a);
-
-    auto X = m_cc->EvalMult(0.5, m_cc->EvalSub(b_plus_a, m_cc->EvalMult(c, b_minus_a))); // ( c *(b - a) + (b + a) ) / 2
-
-    auto b_ = m_cc->EvalRotate(a, -1);
-    auto b__minus_a = m_cc->EvalSub(b_, a);
-    auto b__plus_a = m_cc->EvalAdd(b_, a);
-    auto c_ = sign(b__minus_a);
-
-    auto Y = m_cc->EvalMult(0.5, m_cc->EvalAdd(b__plus_a, m_cc->EvalMult(c_, b__minus_a))); // ( -c_ *(b_ - a) + (b_ + a) ) / 2
-
-    Ciphertext<DCRTPoly> result;
-
-    if (is_even == true) {
-        result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskOdd), m_cc->EvalMult(Y, m_MaskEven));
-    }
-    else {
-        result = m_cc->EvalAdd(m_cc->EvalMult(X, m_MaskEven), m_cc->EvalMult(Y, m_MaskOdd));
-        result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), m_cc->EvalMult(result, m_MaskOne));
-    }
-    return result;
-    */
-}
-
-
-
 
 Ciphertext<DCRTPoly> MaxMinCKKS::compare_div(const Ciphertext<DCRTPoly>& a, 
                              const Ciphertext<DCRTPoly>& b, 
@@ -307,51 +306,26 @@ Ciphertext<DCRTPoly> MaxMinCKKS::compare_div(const Ciphertext<DCRTPoly>& a,
     // Compute a + b
     auto sum_cipher = m_cc->EvalAdd(a, b);
 
-    // Compute a - b
+    /* This is working ....
+    // Compute a - b 
     auto diff_cipher = m_cc->EvalSub(a, b);
-
-    auto abs_diff = m_cc->EvalChebyshevFunction([](double x) -> double { return std::abs(x); }, diff_cipher, -255, 255, 100);
+    auto abs_diff = m_cc->EvalChebyshevFunction([](double x) -> double { return std::abs(x); }, diff_cipher, -255, 255, 500);
 
     auto result = m_cc->EvalMult(0.5, m_cc->EvalAdd(sum_cipher, abs_diff));
 
     return result;
-  
-    // // Normalization
-    // // diff = m_cc->EvalMult(diff, Norm_Value);
+    */
 
-    // // Compute |a - b| approximately
-    // auto diff_squared = m_cc->EvalMult(diff, diff);
-    
-    // // auto abs_diff = m_cc->EvalSqrt(diff_squared);
-    // auto abs_diff = m_cc->EvalChebyshevFunction([](double x) -> double { return 1/std::sqrt(x); }, diff_squared, 0, 65536, 100);
-    // return abs_diff;
 
-    // // Add epsilon to avoid division by zero
-    // auto denominator = m_cc->EvalAdd(abs_diff, epsilon);
-    
-    // // Approximate division of denominator
-    // auto inv_denom = m_cc->EvalDivide(denominator, -1, 1, 8);
+    // Compute a - b v2
+    auto diff_cipher = m_cc->EvalSub(a, b);
+    diff_cipher = m_cc->EvalMult(diff_cipher, Norm_Value);
+    auto abs_diff = m_cc->EvalChebyshevFunction([](double x) -> double { return std::abs(x); }, diff_cipher, -1, 1, 100);
 
-    // // Compute (a - b) / (|a - b| + ε)
-    // auto result = m_cc->EvalMult(diff, inv_denom);
+    auto result = m_cc->EvalMult(0.5, m_cc->EvalAdd(sum_cipher, m_cc->EvalMult(abs_diff, 255.0)));
 
-    // // // Compute (a - b) / (|a - b| + ε)
-    // // auto result = m_cc->EvalDiv(diff, denominator);
-    
-    // return result;
+    return result;
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -369,52 +343,6 @@ Ciphertext<DCRTPoly> MaxMinCKKS::round(Ciphertext<DCRTPoly> a, int k, bool is_ma
 
     return result;
 }
-
-
-void MaxMinCKKS::eval()
-{
-    m_cc->Enable(ADVANCEDSHE);
-
-    auto tempPoly = m_InputC;
-
-    
-
-    tempPoly = m_cc->EvalRotate(tempPoly,4);
-    // auto diff_cipher = m_cc->EvalSub(m_InputC, tempPoly);
-    // auto sign_cipher = sign(diff_cipher);
-
-    auto sign_cipher = compare_div(m_InputC, tempPoly);
-
-    tempPoly = sign_cipher;
-
-    m_OutputC = tempPoly;
-
-    std::cout << "Number of levels used out of 29: " << m_OutputC->GetLevel() << std::endl;
-
-    /*
-    bool is_max = true; // to be change
-    int k_iter = array_limit;
-    while (k_iter >= 1) {
-        k_iter = (int)k_iter / 2;
-        tempPoly = round(tempPoly, k_iter, is_max);
-    }
-    m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); 
-    */
-}
-
-
-void MaxMinCKKS::deserializeOutput()
-{
-
-    if (!Serial::SerializeToFile(m_OutputLocation, m_OutputC, SerType::BINARY))
-    {
-        std::cerr << " Could not serialize output ciphertext" << std::endl;
-    }
-}
-
-
-
-
 
 
 Ciphertext<DCRTPoly> MaxMinCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB)

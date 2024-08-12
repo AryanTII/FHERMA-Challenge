@@ -29,6 +29,7 @@ class MaxMinCKKS {
     string m_OutputLocation;
     int array_limit;
     double Norm_Value;
+    double Norm_Value_Inv;
 
 public:
     MaxMinCKKS(string ccLocation, string pubKeyLocation, string multKeyLocation,
@@ -38,8 +39,12 @@ public:
     void eval();
     void deserializeOutput();
 
+    Ciphertext<DCRTPoly> cond_swap(const Ciphertext<DCRTPoly>& a, const Ciphertext<DCRTPoly>& b);
+    
+
+
     Ciphertext<DCRTPoly> sign(Ciphertext<DCRTPoly> m_InputC);
-    Ciphertext<DCRTPoly> cond_swap(Ciphertext<DCRTPoly> m_InputC, bool is_even);
+    
     Ciphertext<DCRTPoly> compare_div(const Ciphertext<DCRTPoly>& a, const Ciphertext<DCRTPoly>& b, double epsilon);
 
 
