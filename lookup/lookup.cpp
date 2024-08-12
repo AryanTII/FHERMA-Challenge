@@ -95,15 +95,18 @@ void LookUp::eval()
     index_sub = m_cc->EvalSub(m_One, index_sub);
     // End of Stage 2: index_sub has 1 in input index and 0 otherwise
 
+    
+    
     // Start of Stage 3: Compute inner product at first location     
     index_sub = m_cc->EvalMult(index_sub, m_InputC);
+    
     auto index_inner = index_sub;
     for(usint iter = 1; iter < array_limit; iter++){
         index_sub = m_cc->EvalRotate(index_sub, 1);
         index_inner = m_cc->EvalAdd(index_inner, index_sub);
     }
     // End of Stage 3: Compute inner product at first location 
-
+    
     // Create a mask to extract the first element
     vector<int64_t> maskVector(array_limit, 0);
     maskVector[0] = 1;
@@ -111,7 +114,7 @@ void LookUp::eval()
     m_OutputC = m_cc->EvalMult(index_inner, maskPlaintext);
 }
 
-void LookUp::deserializeOutput()
+void LookUp::deserializeOutput()      
 {
 
     if (!Serial::SerializeToFile(m_OutputLocation, m_OutputC, SerType::BINARY))
