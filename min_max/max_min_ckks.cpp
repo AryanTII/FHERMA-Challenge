@@ -245,12 +245,18 @@ void MaxMinCKKS::initCC()
 Ciphertext<DCRTPoly> MaxMinCKKS::cond_swap(const Ciphertext<DCRTPoly>& a, 
                              const Ciphertext<DCRTPoly>& b)
 {
-    return b;
+    // Compute a + b
+    auto sum_cipher = m_cc->EvalAdd(a, b);
+    // Compute a - b 
+    auto diff_cipher = m_cc->EvalSub(a, b);
+    // Choosing a higher degree yields better precision, but a longer runtime.
+    uint32_t polyDegree = 500;
+
+    auto abs_diff = m_cc->EvalChebyshevFunction([](double x) -> double { return std::abs(x); }, diff_cipher, -1, 1, polyDegree);
+
+    auto result = m_cc->EvalMult(0.5, m_cc->EvalAdd(sum_cipher, abs_diff));
+    return result;
 }
-
-
-
-
 
 void MaxMinCKKS::eval()
 {
@@ -260,14 +266,11 @@ void MaxMinCKKS::eval()
 
     while (k_iter > 1) {
         k_iter = k_iter >> 1;
-        std::cout << "Value of k: " << k_iter << std::endl;
         auto rot_cipher = m_cc->EvalRotate(tempPoly, k_iter);
         tempPoly = cond_swap(tempPoly, rot_cipher);
-
-        if(k_iter==4){break;} // Testing one iteration
     }
     
-    m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup);
+    m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); // Result in first position
 }
 
 
@@ -278,243 +281,4 @@ void MaxMinCKKS::deserializeOutput()
     {
         std::cerr << " Could not serialize output ciphertext" << std::endl;
     }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-Ciphertext<DCRTPoly> MaxMinCKKS::sign(Ciphertext<DCRTPoly> m_InputC)
-{
-    auto norm_ciphertext = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
-    // coeff_val.resize(100); // Set number of coefficients to be used
-    auto result_ciphertext = m_cc->EvalChebyshevSeries(norm_ciphertext, coeff_val, -1, 1);
-    return result_ciphertext;
-}
-
-Ciphertext<DCRTPoly> MaxMinCKKS::compare_div(const Ciphertext<DCRTPoly>& a, 
-                             const Ciphertext<DCRTPoly>& b, 
-                             double epsilon = 0.01) {
-
-    // Compute a + b
-    auto sum_cipher = m_cc->EvalAdd(a, b);
-
-    /* This is working ....
-    // Compute a - b 
-    auto diff_cipher = m_cc->EvalSub(a, b);
-    auto abs_diff = m_cc->EvalChebyshevFunction([](double x) -> double { return std::abs(x); }, diff_cipher, -255, 255, 500);
-
-    auto result = m_cc->EvalMult(0.5, m_cc->EvalAdd(sum_cipher, abs_diff));
-
-    return result;
-    */
-
-
-    // Compute a - b v2
-    auto diff_cipher = m_cc->EvalSub(a, b);
-    diff_cipher = m_cc->EvalMult(diff_cipher, Norm_Value);
-    auto abs_diff = m_cc->EvalChebyshevFunction([](double x) -> double { return std::abs(x); }, diff_cipher, -1, 1, 100);
-
-    auto result = m_cc->EvalMult(0.5, m_cc->EvalAdd(sum_cipher, m_cc->EvalMult(abs_diff, 255.0)));
-
-    return result;
-}
-
-
-
-// Max, when batchsize(array_limit) divides n
-Ciphertext<DCRTPoly> MaxMinCKKS::round(Ciphertext<DCRTPoly> a, int k, bool is_max){
-
-    auto b = m_cc->EvalRotate(a, k);
-    Ciphertext<DCRTPoly> c;
-    if (is_max) {
-        c = compare(a, b);
-    } else {
-        c = compare(b, a);
-    }
-    auto result = m_cc->EvalAdd(m_cc->EvalMult(c, m_cc->EvalSub(b,a)), a); // c*(b - a)+a
-
-    return result;
-}
-
-
-Ciphertext<DCRTPoly> MaxMinCKKS::compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB)
-{
-
-    // ------------- Start of Dummy ------------------------------
-    vector<double> result = {1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0};
-    Plaintext result_plaintext = m_cc->MakeCKKSPackedPlaintext(result);
-    Ciphertext<DCRTPoly> result_ciphertext = m_cc->Encrypt(m_PublicKey, result_plaintext);
-    return result_ciphertext;
-
-
-    /*Ciphertext<DCRTPoly> result_ciphertext = m_cc->EvalChebyshevSeries(m_InputA, coeff_val, -1, 1);
-
-    std::vector<Ciphertext<DCRTPoly>> t(1024);
-    int l = 512;
-    t[1] = m_InputC;
-
-    //--CHEBYSHEV series computation <--- this is very naively implemented---
-
-    for (int i = 2; i < l + 1; i++)
-    {
-
-        int j = int((i - 1) / 2) + 1;
-        auto prod = m_cc->EvalMult(t[j], t[i - j]);
-        t[i] = m_cc->EvalAdd(prod, prod);
-        if (2 * j == i)
-            m_cc->EvalSubInPlace(t[i], 1);
-        else
-            m_cc->EvalSubInPlace(t[i], t[2 * j - i]);
-    }
-
-    //----------------------------  T1009,T1011,T1013,T1015 -----------------------------
-
-    std::vector<double> coeff_val2(
-        {5.3627954846304366e-05, -4.766676484102891e-05, 4.170646728565051e-05, -3.574695081520454e-05});
-    int len = 4;
-
-    for (int i = 0; i < len; i++)
-    {
-
-        double coeff = coeff_val2[i];
-        auto temp1 = m_cc->EvalMult(m_cc->EvalMult(t[1 + 2 * i], coeff * 64), t[16]);
-        auto temp2 = m_cc->EvalMult(t[15 - 2 * i], coeff * 32);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[32]);
-        temp2 = m_cc->EvalMult(t[15 - 2 * i], coeff * 16);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[64]);
-        temp2 = m_cc->EvalMult(t[15 - 2 * i], coeff * 8);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[128]);
-        temp2 = m_cc->EvalMult(t[15 - 2 * i], coeff * 4);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[256]);
-        temp2 = m_cc->EvalMult(t[15 - 2 * i], coeff * 2);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[512]);
-        temp2 = m_cc->EvalMult(t[15 - 2 * i], coeff);
-        auto t59 = m_cc->EvalSub(temp1, temp2);
-
-        result_ciphertext = m_cc->EvalAdd(result_ciphertext, t59);
-    }
-
-    //----------------------------  T1017,T1019 -----------------------------
-
-    std::vector<double> coeff_val3({2.9788103390049553e-05, -2.3829813764789798e-05});
-    len = 2;
-
-    for (int i = 0; i < len; i++)
-    {
-
-        double coeff = coeff_val3[i];
-        auto temp1 = m_cc->EvalMult(m_cc->EvalMult(t[1 + 2 * i], coeff * 128), t[8]);
-        auto temp2 = m_cc->EvalMult(t[7 - 2 * i], coeff * 64);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[16]);
-        temp2 = m_cc->EvalMult(t[7 - 2 * i], coeff * 32);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[32]);
-        temp2 = m_cc->EvalMult(t[7 - 2 * i], coeff * 16);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[64]);
-        temp2 = m_cc->EvalMult(t[7 - 2 * i], coeff * 8);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[128]);
-        temp2 = m_cc->EvalMult(t[7 - 2 * i], coeff * 4);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[256]);
-        temp2 = m_cc->EvalMult(t[7 - 2 * i], coeff * 2);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[512]);
-        temp2 = m_cc->EvalMult(t[7 - 2 * i], coeff);
-        auto t59 = m_cc->EvalSub(temp1, temp2);
-
-        result_ciphertext = m_cc->EvalAdd(result_ciphertext, t59);
-    }
-
-    //----------------------------  T1021 -----------------------------
-    std::vector<double> coeff_val4({1.7871969994745013e-05});
-    len = 1;
-
-    for (int i = 0; i < len; i++)
-    {
-        double coeff = coeff_val4[i];
-        auto temp1 = m_cc->EvalMult(m_cc->EvalMult(t[1 + 2 * i], coeff * 256), t[4]);
-        auto temp2 = m_cc->EvalMult(t[3 - 2 * i], coeff * 128);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[8]);
-        temp2 = m_cc->EvalMult(t[3 - 2 * i], coeff * 64);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[16]);
-        temp2 = m_cc->EvalMult(t[3 - 2 * i], coeff * 32);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[32]);
-        temp2 = m_cc->EvalMult(t[3 - 2 * i], coeff * 16);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[64]);
-        temp2 = m_cc->EvalMult(t[3 - 2 * i], coeff * 8);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[128]);
-        temp2 = m_cc->EvalMult(t[3 - 2 * i], coeff * 4);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[256]);
-        temp2 = m_cc->EvalMult(t[3 - 2 * i], coeff * 2);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[512]);
-        temp2 = m_cc->EvalMult(t[3 - 2 * i], coeff);
-        auto t59 = m_cc->EvalSub(temp1, temp2);
-        result_ciphertext = m_cc->EvalAdd(result_ciphertext, t59);
-    }
-
-    //----------------------------  T1023 -----------------------------
-    std::vector<double> coeff_val5({-1.1914460923282231e-05});
-    len = 1;
-
-    for (int i = 0; i < len; i++)
-    {
-
-        double coeff = coeff_val5[i];
-        auto temp1 = m_cc->EvalMult(m_cc->EvalMult(t[1 + 2 * i], coeff * 512), t[2]);
-        auto temp2 = m_cc->EvalMult(t[1 - 2 * i], coeff * 256);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[4]);
-        temp2 = m_cc->EvalMult(t[1 - 2 * i], coeff * 128);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[8]);
-        temp2 = m_cc->EvalMult(t[1 - 2 * i], coeff * 64);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[16]);
-        temp2 = m_cc->EvalMult(t[1 - 2 * i], coeff * 32);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[32]);
-        temp2 = m_cc->EvalMult(t[1 - 2 * i], coeff * 16);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[64]);
-        temp2 = m_cc->EvalMult(t[1 - 2 * i], coeff * 8);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[128]);
-        temp2 = m_cc->EvalMult(t[1 - 2 * i], coeff * 4);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[256]);
-        temp2 = m_cc->EvalMult(t[1 - 2 * i], coeff * 2);
-        temp1 = m_cc->EvalSub(temp1, temp2);
-        temp1 = m_cc->EvalMult(temp1, t[512]);
-        temp2 = m_cc->EvalMult(t[1 - 2 * i], coeff);
-        auto t59 = m_cc->EvalSub(temp1, temp2);
-
-        result_ciphertext = m_cc->EvalAdd(result_ciphertext, t59);
-    }
-
-    result_ciphertext = m_cc->EvalMult(m_Half, m_cc->EvalAdd(m_One, result_ciphertext));
-    return result_ciphertext;
-    */
 }

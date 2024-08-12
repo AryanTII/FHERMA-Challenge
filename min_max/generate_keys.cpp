@@ -5,7 +5,7 @@ int main() {
 
     // CKKS parameters
     uint32_t ring_dimension = 32768;
-    uint32_t multDepth = 19;
+    uint32_t multDepth = 59;
     uint32_t scaleMod = 59;
     usint firstMod = 60;
     uint32_t batchSize = 8;
@@ -47,7 +47,7 @@ int main() {
     cc->EvalMultKeyGen(keys.secretKey);
     cc->EvalRotateKeyGen(keys.secretKey, {1, 2, 4});
     cc->EvalBootstrapKeyGen(keys.secretKey, numSlots); // Bootstrapping
-    
+
 
     // Serialize into binary files
     std::cout << "Serializing Relevant Keys and Inputs!" << std::endl;
