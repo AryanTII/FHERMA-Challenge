@@ -224,8 +224,8 @@ void MaxMinCKKS::initCC()
         std::exit(1);
     }
 
-    // std::vector<uint32_t> levelBudget = {4, 4};
-    // m_cc->EvalBootstrapSetup(levelBudget); //Simple Bootstrapping Setup
+    std::vector<uint32_t> levelBudget = {4, 4};
+    m_cc->EvalBootstrapSetup(levelBudget); //Simple Bootstrapping Setup
 
     array_limit = 8; // 2048
     // array_limit = m_cc->GetEncodingParams()->GetBatchSize();
@@ -270,6 +270,10 @@ void MaxMinCKKS::eval()
         auto rot_cipher = m_cc->EvalRotate(tempPoly, k_iter);
         tempPoly = cond_swap(tempPoly, rot_cipher);
     }
+
+    std::cout << "Level Before Bootstrapping: " << 32 - tempPoly->GetLevel() << std::endl;
+    tempPoly = m_cc->EvalBootstrap(tempPoly);
+    std::cout << "Level After Bootstrapping: " << 32 - tempPoly->GetLevel() << std::endl;
     
     m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); // Result in first position
 }
