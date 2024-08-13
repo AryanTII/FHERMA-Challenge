@@ -261,19 +261,25 @@ Ciphertext<DCRTPoly> MaxMinCKKS::cond_swap(const Ciphertext<DCRTPoly>& a,
 
 void MaxMinCKKS::eval()
 {
+    
+    std::cout << "Multiplicative Depth Level available in Input: " << 52 - m_InputC->GetLevel() << std::endl;
+
     // Normalizing
     auto tempPoly = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
     int k_iter = array_limit;
 
-    while (k_iter > 4) {
+    while (k_iter > 1) {
         k_iter = k_iter >> 1;
         auto rot_cipher = m_cc->EvalRotate(tempPoly, k_iter);
         tempPoly = cond_swap(tempPoly, rot_cipher);
+        std::cout << "Level Available Before Bootstrapping: " << 52 - tempPoly->GetLevel() << std::endl;
+        if(k_iter < 2){
+        tempPoly = m_cc->EvalBootstrap(tempPoly);
+        }
+        std::cout << "Level Available After Bootstrapping: " << 52 - tempPoly->GetLevel() << std::endl;
     }
 
-    std::cout << "Level Before Bootstrapping: " << 32 - tempPoly->GetLevel() << std::endl;
-    tempPoly = m_cc->EvalBootstrap(tempPoly);
-    std::cout << "Level After Bootstrapping: " << 32 - tempPoly->GetLevel() << std::endl;
+    
     
     m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); // Result in first position
 }

@@ -27,7 +27,7 @@ int main() {
     SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
     parameters.SetSecretKeyDist(secretKeyDist);
     std::vector<uint32_t> levelBudget = {4, 4};
-    uint32_t levelsAvailableAfterBootstrap = 10;
+    uint32_t levelsAvailableAfterBootstrap = 30;
     usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist);
     parameters.SetMultiplicativeDepth(depth);
 
@@ -128,9 +128,9 @@ int main() {
     std::cout << "Desired Output: " << largestElement << std::endl;
     // --------------------------------------------------------------------
 
-    std::cout << "Level Before Bootstrapping: " << depth - ciphertext->GetLevel() << std::endl;
-    ciphertext = cc->EvalBootstrap(ciphertext);
-    std::cout << "Level After Bootstrapping: " << depth - ciphertext->GetLevel() << std::endl;
+    // std::cout << "Level Before Bootstrapping: " << depth - ciphertext->GetLevel() << std::endl;
+    // ciphertext = cc->EvalBootstrap(ciphertext);
+    // std::cout << "Level After Bootstrapping: " << depth - ciphertext->GetLevel() << std::endl;
 
     // // Serialize input
     if (!Serial::SerializeToFile(inputLocation, ciphertext, SerType::BINARY)) {
