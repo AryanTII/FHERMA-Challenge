@@ -4,26 +4,32 @@
 int main() {
 
     // CKKS parameters
-    uint32_t ring_dimension = 32768;
-    uint32_t multDepth = 59;
+    uint32_t ring_dimension = 4096;//32768;
+    // uint32_t multDepth = 59;
     uint32_t scaleMod = 59;
     usint firstMod = 60;
     uint32_t batchSize = 8;
-
-    // // Bootstrapping
-    // uint32_t levelsAvailableAfterBootstrap = 10; 
-    // usint depth = levelsAvailableAfterBootstrap + multDepth;
-    std::vector<uint32_t> levelBudget = {3, 3};
+    
     // std::vector<uint32_t> bsgsDim = {0, 0};
 
     CCParams<CryptoContextCKKSRNS> parameters;
-    parameters.SetMultiplicativeDepth(multDepth);
+    // parameters.SetMultiplicativeDepth(multDepth);
     parameters.SetScalingModSize(scaleMod);
     parameters.SetFirstModSize(firstMod);
     parameters.SetBatchSize(batchSize);
-    // For speed
+    ScalingTechnique rescaleTech = FLEXIBLEAUTO;
+    parameters.SetScalingTechnique(rescaleTech);
+
     parameters.SetSecurityLevel(SecurityLevel::HEStd_NotSet);
     parameters.SetRingDim(ring_dimension);
+
+    // Bootstrapping
+    SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
+    parameters.SetSecretKeyDist(secretKeyDist);
+    std::vector<uint32_t> levelBudget = {4, 4};
+    uint32_t levelsAvailableAfterBootstrap = 10;
+    usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist);
+    parameters.SetMultiplicativeDepth(depth);
 
     std::cout << "Parameters: " << parameters << std::endl;  // prints all parameter values
 
@@ -85,13 +91,46 @@ int main() {
 
 
     // ------------------- Dummy Input for local testing -------------------
-    // uint32_t batchSize = 8;
+    /*
     // Input Vector
     vector<double> input = {3, 1, 4, 15, 5, 9, 2, 6};
-    Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input);
+    // Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input);
+    Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input, 1, 0, nullptr, numSlots);
     std::cout << "Input vector: " << plaintext << std::endl;
     Ciphertext<DCRTPoly> ciphertext = cc->Encrypt(keys.publicKey, plaintext);
     std::cout << "Desired Output: 15" << std::endl;
+    */
+
+    // --------------------------------------------------------------------
+    int array_limit = 8;  // Set this to your desired size
+    std::vector<double> input;
+    input.reserve(array_limit);
+
+    double largestElement = 0;
+
+    // Seed the random number generator
+    srand(static_cast<unsigned>(time(0)));
+
+    for (int i = 0; i < array_limit; ++i) {
+        double randomValue = rand() % 256;  // Generate a random integer between 0 and 255
+        input.push_back(randomValue);
+
+        // Update largest element
+        if (randomValue > largestElement) {
+            largestElement = randomValue;
+        }
+    }
+
+    // Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input);
+    Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input, 1, 0, nullptr, numSlots);
+    std::cout << "Input vector: " << plaintext << std::endl;
+    Ciphertext<DCRTPoly> ciphertext = cc->Encrypt(keys.publicKey, plaintext);
+    std::cout << "Desired Output: " << largestElement << std::endl;
+    // --------------------------------------------------------------------
+
+    std::cout << "Level Before Bootstrapping: " << depth - ciphertext->GetLevel() << std::endl;
+    ciphertext = cc->EvalBootstrap(ciphertext);
+    std::cout << "Level After Bootstrapping: " << depth - ciphertext->GetLevel() << std::endl;
 
     // // Serialize input
     if (!Serial::SerializeToFile(inputLocation, ciphertext, SerType::BINARY)) {

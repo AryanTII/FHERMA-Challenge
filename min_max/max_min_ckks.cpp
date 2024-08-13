@@ -224,6 +224,9 @@ void MaxMinCKKS::initCC()
         std::exit(1);
     }
 
+    // std::vector<uint32_t> levelBudget = {4, 4};
+    // m_cc->EvalBootstrapSetup(levelBudget); //Simple Bootstrapping Setup
+
     array_limit = 8; // 2048
     // array_limit = m_cc->GetEncodingParams()->GetBatchSize();
     Norm_Value = 255.0;
@@ -238,8 +241,6 @@ void MaxMinCKKS::initCC()
     m_One = m_cc->MakeCKKSPackedPlaintext(arr_one);
     m_MaskLookup  = m_cc->MakeCKKSPackedPlaintext(mask_lookup);
 }
-
-
 
 
 Ciphertext<DCRTPoly> MaxMinCKKS::cond_swap(const Ciphertext<DCRTPoly>& a, 
@@ -264,7 +265,7 @@ void MaxMinCKKS::eval()
     auto tempPoly = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
     int k_iter = array_limit;
 
-    while (k_iter > 1) {
+    while (k_iter > 4) {
         k_iter = k_iter >> 1;
         auto rot_cipher = m_cc->EvalRotate(tempPoly, k_iter);
         tempPoly = cond_swap(tempPoly, rot_cipher);
@@ -273,6 +274,22 @@ void MaxMinCKKS::eval()
     m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); // Result in first position
 }
 
+/*
+void MaxMinCKKS::eval()
+{
+    // Normalizing
+    auto tempPoly = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
+    int k_iter = array_limit;
+
+    while (k_iter > 1) {
+        k_iter = k_iter >> 1;
+        auto rot_cipher = m_cc->EvalRotate(tempPoly, k_iter);
+        tempPoly = cond_swap(tempPoly, rot_cipher);
+    }
+    
+    m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); // Result in first position
+}
+*/
 
 void MaxMinCKKS::deserializeOutput()
 {
