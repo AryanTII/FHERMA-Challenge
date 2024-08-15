@@ -268,6 +268,8 @@ void MaxMinCKKS::eval()
     auto tempPoly = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
     int k_iter = array_limit;
 
+    std::cout << "Level Available Before Iteration: " << 52 - tempPoly->GetLevel() << std::endl;
+
     while (k_iter > 1) {
         k_iter = k_iter >> 1;
         auto rot_cipher = m_cc->EvalRotate(tempPoly, k_iter);

@@ -1,6 +1,6 @@
 {
     "indexes_for_rotation_key": [
-        1, -1, 2, -2, 4, -4
+        1, 2, 4
     ],
     "mult_depth": 29,
     "ring_dimension": 131072,

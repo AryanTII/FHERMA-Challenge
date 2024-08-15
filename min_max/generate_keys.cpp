@@ -4,11 +4,11 @@
 int main() {
 
     // CKKS parameters
-    uint32_t ring_dimension = 4096;//32768;
+    uint32_t ring_dimension = 131072;//4096;//32768;
     // uint32_t multDepth = 59;
     uint32_t scaleMod = 59;
     usint firstMod = 60;
-    uint32_t batchSize = 8;
+    uint32_t batchSize = 65536;
     
     // std::vector<uint32_t> bsgsDim = {0, 0};
 
