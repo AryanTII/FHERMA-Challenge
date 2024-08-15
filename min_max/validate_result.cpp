@@ -71,12 +71,33 @@ int main() {
     plaintextInput->SetLength(batchSize);
     plaintextOutput->SetLength(batchSize);
 
-    std::cout.precision(2);
-    
     std::cout << "Input  Plaintext:" << std::fixed << std::setprecision(5) << plaintextInput << std::endl;
     std::cout << "Output Plaintext:" << std::fixed << std::setprecision(5) << plaintextOutput << std::endl;
 
     std::cout << "Result validation completed!" << std::endl;
+
+    double largestElement;
+
+    // Open the file for reading
+    std::ifstream desiredInputFile("desired_output.txt");
+    if (desiredInputFile.is_open()) {
+        desiredInputFile >> largestElement;  // Read the value into largestElement
+        desiredInputFile.close();
+
+        std::cout << "The value of largestElement read from file is: " << largestElement << std::endl;
+    } else {
+        std::cerr << "Unable to open file for reading." << std::endl;
+    }
+
+    // Extract the first element of plaintextOutput
+    double firstElement = plaintextOutput->GetCKKSPackedValue()[0].real();
+
+    // Calculate the difference
+    double difference = largestElement - firstElement;
+
+    // Display the difference
+    std::cout << "Difference between actual and desired outputs (should be < 0.01): "
+              << std::fixed << std::setprecision(5) << difference << std::endl;
 
     return 0;
 

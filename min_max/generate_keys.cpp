@@ -1,14 +1,37 @@
 #include "generate_keys.h"
 
+std::vector<double> EvalChebyshevCoefficients(std::function<double(double)> func, double a, double b, uint32_t degree) {
+    if (!degree) {
+        OPENFHE_THROW("The degree of approximation can not be zero");
+    }
+    // the number of coefficients to be generated should be degree+1 as zero is also included
+    size_t coeffTotal{degree + 1};
+    double bMinusA = 0.5 * (b - a);
+    double bPlusA  = 0.5 * (b + a);
+    double PiByDeg = M_PI / static_cast<double>(coeffTotal);
+    std::vector<double> functionPoints(coeffTotal);
+    for (size_t i = 0; i < coeffTotal; ++i)
+        functionPoints[i] = func(std::cos(PiByDeg * (i + 0.5)) * bMinusA + bPlusA);
+
+    double multFactor = 2.0 / static_cast<double>(coeffTotal);
+    std::vector<double> coefficients(coeffTotal);
+    for (size_t i = 0; i < coeffTotal; ++i) {
+        for (size_t j = 0; j < coeffTotal; ++j)
+            coefficients[i] += functionPoints[j] * std::cos(PiByDeg * i * (j + 0.5));
+        coefficients[i] *= multFactor;
+    }
+    return coefficients;
+}
+
 
 int main() {
 
     // CKKS parameters
-    uint32_t ring_dimension = 131072;//4096;//32768;
+    uint32_t ring_dimension = 4096;//131072;//32768;
     // uint32_t multDepth = 59;
     uint32_t scaleMod = 59;
     usint firstMod = 60;
-    uint32_t batchSize = 65536;
+    uint32_t batchSize = 8;//65536;
     
     // std::vector<uint32_t> bsgsDim = {0, 0};
 
@@ -126,6 +149,14 @@ int main() {
     std::cout << "Input vector: " << plaintext << std::endl;
     Ciphertext<DCRTPoly> ciphertext = cc->Encrypt(keys.publicKey, plaintext);
     std::cout << "Desired Output: " << largestElement << std::endl;
+    std::ofstream desiredOutputFile("desired_output.txt");
+    if (desiredOutputFile.is_open()) {
+        desiredOutputFile << largestElement;
+        desiredOutputFile.close();
+        std::cout << "Desired output has been written to build/desired_output.txt" << std::endl;
+    } else {
+        std::cerr << "Unable to open file for writing." << std::endl;
+    }
     // --------------------------------------------------------------------
 
     // std::cout << "Level Before Bootstrapping: " << depth - ciphertext->GetLevel() << std::endl;
@@ -139,6 +170,39 @@ int main() {
     }
     
     std::cout << "Serialization completed successfully!" << std::endl;
+
+    // --------------------------------------------------------------------
+    // Choosing a higher degree yields better precision, but a longer runtime.
+    uint32_t polyDegree = 200;
+    std::vector<double> coefficients = EvalChebyshevCoefficients([](double x) -> double { return std::abs(x); }, -1, 1, polyDegree);
+
+    // Writing the coefficients to a file in the desired format
+    std::ofstream outputFile("chebyshev_coefficients.txt");
+    if (outputFile.is_open()) {
+        outputFile << "EvalChebyshevCoefficients for abs function with polyDegree: " << polyDegree << "\n";
+        outputFile << "std::vector<double> coeff_cheby_abs({\n";
+        outputFile << std::fixed << std::setprecision(17);  // Set precision for floating point numbers
+
+        for (size_t i = 0; i < coefficients.size(); ++i) {
+            outputFile << coefficients[i];
+            if (i != coefficients.size() - 1) {
+                outputFile << ",";
+            }
+            // Add a new line every few coefficients to keep the output readable
+            if ((i + 1) % 5 == 0) {
+                outputFile << "\n";
+            } else {
+                outputFile << " ";
+            }
+        }
+
+        outputFile << "});\n";
+        outputFile.close();
+        std::cout << "Coefficients have been written to chebyshev_coefficients.txt" << std::endl;
+    } else {
+        std::cerr << "Unable to open file for writing." << std::endl;
+    }
+    // --------------------------------------------------------------------
 
     return 0;
 }

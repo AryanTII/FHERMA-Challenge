@@ -250,9 +250,9 @@ Ciphertext<DCRTPoly> MaxMinCKKS::cond_swap(const Ciphertext<DCRTPoly>& a,
     auto sum_cipher = m_cc->EvalAdd(a, b);
     // Compute a - b 
     auto diff_cipher = m_cc->EvalSub(a, b);
+
     // Choosing a higher degree yields better precision, but a longer runtime.
     uint32_t polyDegree = 500;
-
     auto abs_diff = m_cc->EvalChebyshevFunction([](double x) -> double { return std::abs(x); }, diff_cipher, -1, 1, polyDegree);
 
     auto result = m_cc->EvalMult(0.5, m_cc->EvalAdd(sum_cipher, abs_diff));
@@ -268,21 +268,20 @@ void MaxMinCKKS::eval()
     auto tempPoly = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
     int k_iter = array_limit;
 
-    std::cout << "Level Available Before Iteration: " << 52 - tempPoly->GetLevel() << std::endl;
-
     while (k_iter > 1) {
+        std::cout << "Level Available Before Iteration - " << k_iter<<": " << 52 - tempPoly->GetLevel() << std::endl;
         k_iter = k_iter >> 1;
         auto rot_cipher = m_cc->EvalRotate(tempPoly, k_iter);
         tempPoly = cond_swap(tempPoly, rot_cipher);
-        std::cout << "Level Available Before Bootstrapping: " << 52 - tempPoly->GetLevel() << std::endl;
+        // tempPoly = cond_swap_compare(tempPoly, rot_cipher); // If to use compare based.
+        
         if(k_iter < 2){
-        tempPoly = m_cc->EvalBootstrap(tempPoly);
+            std::cout << "Level Available Before Bootstrapping: " << 52 - tempPoly->GetLevel() << std::endl;
+            tempPoly = m_cc->EvalBootstrap(tempPoly);
+            std::cout << "Level Available After Bootstrapping: " << 52 - tempPoly->GetLevel() << std::endl;
         }
-        std::cout << "Level Available After Bootstrapping: " << 52 - tempPoly->GetLevel() << std::endl;
     }
 
-    
-    
     m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); // Result in first position
 }
 
@@ -311,3 +310,22 @@ void MaxMinCKKS::deserializeOutput()
         std::cerr << " Could not serialize output ciphertext" << std::endl;
     }
 }
+
+
+Ciphertext<DCRTPoly> MaxMinCKKS::sign(const Ciphertext<DCRTPoly> m_InputC)
+{
+    coeff_val.resize(500); // Set number of coefficients to be used
+    auto result_ciphertext = m_cc->EvalChebyshevSeries(m_InputC, coeff_val, -1, 1);
+    return result_ciphertext;
+}
+
+Ciphertext<DCRTPoly> MaxMinCKKS::cond_swap_compare(const Ciphertext<DCRTPoly>& a, const Ciphertext<DCRTPoly>& b){
+
+    auto a_minus_b = m_cc->EvalSub(a, b);
+    auto a_plus_b = m_cc->EvalAdd(a, b);
+    auto c = sign(a_minus_b);
+
+    auto result = m_cc->EvalMult(0.5, m_cc->EvalAdd(a_plus_b, m_cc->EvalMult(c, a_minus_b))); // ( c *(b - a) + (b + a) ) / 2
+    return result;
+}
+

@@ -42,14 +42,11 @@ public:
     Ciphertext<DCRTPoly> cond_swap(const Ciphertext<DCRTPoly>& a, const Ciphertext<DCRTPoly>& b);
     
 
-
-    Ciphertext<DCRTPoly> sign(Ciphertext<DCRTPoly> m_InputC);
+    Ciphertext<DCRTPoly> sign(Ciphertext<DCRTPoly> m_InputC);   
+    Ciphertext<DCRTPoly> cond_swap_compare(const Ciphertext<DCRTPoly>& a, const Ciphertext<DCRTPoly>& b); 
+    // Ciphertext<DCRTPoly> compare_div(const Ciphertext<DCRTPoly>& a, const Ciphertext<DCRTPoly>& b, double epsilon);
+    // Ciphertext<DCRTPoly> compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB);
+    // Ciphertext<DCRTPoly> round(Ciphertext<DCRTPoly> m_InputC, int len_comparison_vector, bool is_max);
     
-    Ciphertext<DCRTPoly> compare_div(const Ciphertext<DCRTPoly>& a, const Ciphertext<DCRTPoly>& b, double epsilon);
-
-
-    Ciphertext<DCRTPoly> compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB);
-    Ciphertext<DCRTPoly> round(Ciphertext<DCRTPoly> m_InputC, int len_comparison_vector, bool is_max);
-
 
 };
