@@ -67,12 +67,12 @@ int main() {
     }
 
 
-    uint32_t batchSize = 8;
+    uint32_t batchSize = 2048;
     plaintextInput->SetLength(batchSize);
     plaintextOutput->SetLength(batchSize);
 
-    std::cout << "Input  Plaintext:" << std::fixed << std::setprecision(5) << plaintextInput << std::endl;
-    std::cout << "Output Plaintext:" << std::fixed << std::setprecision(5) << plaintextOutput << std::endl;
+    // std::cout << "Input  Plaintext:" << std::fixed << std::setprecision(5) << plaintextInput << std::endl;
+    // std::cout << "Output Plaintext:" << std::fixed << std::setprecision(5) << plaintextOutput << std::endl;
 
     std::cout << "Result validation completed!" << std::endl;
 

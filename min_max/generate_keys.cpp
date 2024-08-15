@@ -31,7 +31,7 @@ int main() {
     // uint32_t multDepth = 59;
     uint32_t scaleMod = 59;
     usint firstMod = 60;
-    uint32_t batchSize = 8;//65536;
+    uint32_t batchSize = 2048;//65536;
     
     // std::vector<uint32_t> bsgsDim = {0, 0};
 
@@ -54,6 +54,15 @@ int main() {
     usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist);
     parameters.SetMultiplicativeDepth(depth);
 
+    std::ofstream paramsFile("genkey_params.txt");
+    if (paramsFile.is_open()) {
+        paramsFile << depth;
+        paramsFile.close();
+        std::cout << "Multiplicative depth has been written to build/genkey_params.txt" << std::endl;
+    } else {
+        std::cerr << "Unable to open file for writing." << std::endl;
+    }
+
     std::cout << "Parameters: " << parameters << std::endl;  // prints all parameter values
 
     // Generate crypto context
@@ -74,7 +83,7 @@ int main() {
     // Key generation
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
-    cc->EvalRotateKeyGen(keys.secretKey, {1, 2, 4});
+    cc->EvalRotateKeyGen(keys.secretKey, {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
     cc->EvalBootstrapKeyGen(keys.secretKey, numSlots); // Bootstrapping
 
 
@@ -112,20 +121,8 @@ int main() {
     }
     rotKeyFile.close();
 
-
-    // ------------------- Dummy Input for local testing -------------------
-    /*
-    // Input Vector
-    vector<double> input = {3, 1, 4, 15, 5, 9, 2, 6};
-    // Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input);
-    Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input, 1, 0, nullptr, numSlots);
-    std::cout << "Input vector: " << plaintext << std::endl;
-    Ciphertext<DCRTPoly> ciphertext = cc->Encrypt(keys.publicKey, plaintext);
-    std::cout << "Desired Output: 15" << std::endl;
-    */
-
     // --------------------------------------------------------------------
-    int array_limit = 8;  // Set this to your desired size
+    int array_limit = 2048;  // Set this to your desired size
     std::vector<double> input;
     input.reserve(array_limit);
 
@@ -146,9 +143,9 @@ int main() {
 
     // Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input);
     Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input, 1, 0, nullptr, numSlots);
-    std::cout << "Input vector: " << plaintext << std::endl;
+    // std::cout << "Input vector: " << plaintext << std::endl;
     Ciphertext<DCRTPoly> ciphertext = cc->Encrypt(keys.publicKey, plaintext);
-    std::cout << "Desired Output: " << largestElement << std::endl;
+    // std::cout << "Desired Output: " << largestElement << std::endl;
     std::ofstream desiredOutputFile("desired_output.txt");
     if (desiredOutputFile.is_open()) {
         desiredOutputFile << largestElement;
@@ -173,7 +170,7 @@ int main() {
 
     // --------------------------------------------------------------------
     // Choosing a higher degree yields better precision, but a longer runtime.
-    uint32_t polyDegree = 200;
+    uint32_t polyDegree = 500;
     std::vector<double> coefficients = EvalChebyshevCoefficients([](double x) -> double { return std::abs(x); }, -1, 1, polyDegree);
 
     // Writing the coefficients to a file in the desired format

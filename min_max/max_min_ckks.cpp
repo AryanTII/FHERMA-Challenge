@@ -227,8 +227,7 @@ void MaxMinCKKS::initCC()
     std::vector<uint32_t> levelBudget = {4, 4};
     m_cc->EvalBootstrapSetup(levelBudget); //Simple Bootstrapping Setup
 
-    array_limit = 8; // 2048
-    // array_limit = m_cc->GetEncodingParams()->GetBatchSize();
+    array_limit = 2048; 
     Norm_Value = 255.0;
     Norm_Value_Inv = 1.0/Norm_Value;
 
@@ -261,46 +260,38 @@ Ciphertext<DCRTPoly> MaxMinCKKS::cond_swap(const Ciphertext<DCRTPoly>& a,
 
 void MaxMinCKKS::eval()
 {
-    
-    std::cout << "Multiplicative Depth Level available in Input: " << 52 - m_InputC->GetLevel() << std::endl;
+
+    // ------- Just for testing -----------
+    usint mult_depth = 0;
+    // Open the file for reading
+    std::ifstream paramsFile("genkey_params.txt");
+    if (paramsFile.is_open()) {
+        paramsFile >> mult_depth;
+        paramsFile.close();
+    } else {
+        std::cerr << "Unable to open file for reading." << std::endl;
+    }
+    // -------------------------------------
+    std::cout << "Multiplicative Depth Level available in Input: " << mult_depth - m_InputC->GetLevel() << std::endl;
 
     // Normalizing
     auto tempPoly = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
     int k_iter = array_limit;
 
     while (k_iter > 1) {
-        std::cout << "Level Available Before Iteration - " << k_iter<<": " << 52 - tempPoly->GetLevel() << std::endl;
+        std::cout << "Level Available Before Iteration - " << k_iter<<": " << mult_depth - tempPoly->GetLevel() << std::endl;
         k_iter = k_iter >> 1;
         auto rot_cipher = m_cc->EvalRotate(tempPoly, k_iter);
-        tempPoly = cond_swap(tempPoly, rot_cipher);
-        // tempPoly = cond_swap_compare(tempPoly, rot_cipher); // If to use compare based.
+        // tempPoly = cond_swap(tempPoly, rot_cipher);
+        tempPoly = cond_swap_compare(tempPoly, rot_cipher); // If to use compare based approach.
         
-        if(k_iter < 2){
-            std::cout << "Level Available Before Bootstrapping: " << 52 - tempPoly->GetLevel() << std::endl;
-            tempPoly = m_cc->EvalBootstrap(tempPoly);
-            std::cout << "Level Available After Bootstrapping: " << 52 - tempPoly->GetLevel() << std::endl;
-        }
+        std::cout << "Level Available Before Bootstrapping: " << mult_depth - tempPoly->GetLevel() << std::endl;
+        tempPoly = m_cc->EvalBootstrap(tempPoly);
+        std::cout << "Level Available After Bootstrapping: " << mult_depth - tempPoly->GetLevel() << std::endl;
     }
 
     m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); // Result in first position
 }
-
-/*
-void MaxMinCKKS::eval()
-{
-    // Normalizing
-    auto tempPoly = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
-    int k_iter = array_limit;
-
-    while (k_iter > 1) {
-        k_iter = k_iter >> 1;
-        auto rot_cipher = m_cc->EvalRotate(tempPoly, k_iter);
-        tempPoly = cond_swap(tempPoly, rot_cipher);
-    }
-    
-    m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); // Result in first position
-}
-*/
 
 void MaxMinCKKS::deserializeOutput()
 {
@@ -314,7 +305,7 @@ void MaxMinCKKS::deserializeOutput()
 
 Ciphertext<DCRTPoly> MaxMinCKKS::sign(const Ciphertext<DCRTPoly> m_InputC)
 {
-    coeff_val.resize(500); // Set number of coefficients to be used
+    // coeff_val.resize(500); // Set number of coefficients to be used
     auto result_ciphertext = m_cc->EvalChebyshevSeries(m_InputC, coeff_val, -1, 1);
     return result_ciphertext;
 }
