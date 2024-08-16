@@ -101,18 +101,17 @@ Ciphertext<DCRTPoly> MaxMinCKKS::cond_swap(const Ciphertext<DCRTPoly>& a,
 void MaxMinCKKS::eval()
 {
 
-    // // ------- Just for testing -----------
+    // ------- Just for testing -----------
     usint mult_depth = 0;
     // Open the file for reading
-    std::ifstream paramsFile("genkey_params.txt");
+    std::ifstream paramsFile("../files/genkey_params.txt");
     if (paramsFile.is_open()) {
         paramsFile >> mult_depth;
         paramsFile.close();
     } else {
         std::cerr << "Unable to open file for reading." << std::endl;
     }
-    // // -------------------------------------
-    // std::cout << "Multiplicative Depth Level available in Input: " << mult_depth - m_InputC->GetLevel() << std::endl;
+    // -------------------------------------
 
     // Normalizing
     auto tempPoly = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
@@ -120,21 +119,13 @@ void MaxMinCKKS::eval()
 
     while (k_iter > 1) {
         std::cout << "Level Available Before Iteration - " << k_iter<<": " << mult_depth - tempPoly->GetLevel() << std::endl;
+        
         k_iter = k_iter >> 1;
-
-        // auto rot_cipher = m_cc->EvalRotate(tempPoly, k_iter); // Working
-        // Fast rotation variant
-        auto rotc_precomp = m_cc->EvalFastRotationPrecompute(tempPoly);
-        // auto rot_cipher = m_cc->EvalFastRotation(tempPoly, k_iter, 2048, rotc_precomp);
-        auto rot_cipher = m_cc->EvalFastRotationExt(tempPoly, k_iter, rotc_precomp, true);
-        rot_cipher  = m_cc->KeySwitchDown(rot_cipher);
+        auto rot_cipher = m_cc->EvalRotate(tempPoly, k_iter);
 
         tempPoly = cond_swap(tempPoly, rot_cipher);
         // tempPoly = cond_swap_compare(tempPoly, rot_cipher); // If to use compare based approach.
-        
-        // std::cout << "Level Available Before Bootstrapping: " << mult_depth - tempPoly->GetLevel() << std::endl;
         tempPoly = m_cc->EvalBootstrap(tempPoly);
-        // std::cout << "Level Available After Bootstrapping: " << mult_depth - tempPoly->GetLevel() << std::endl;
     }
 
     m_OutputC = m_cc->EvalMult(tempPoly, m_MaskLookup); // Result in first position

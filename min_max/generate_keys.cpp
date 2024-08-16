@@ -27,11 +27,11 @@ std::vector<double> EvalChebyshevCoefficients(std::function<double(double)> func
 int main() {
 
     // CKKS parameters
-    uint32_t ring_dimension = 4096;//131072;//32768;
-    uint32_t multDepth = 22;
+    uint32_t ring_dimension = 4096; // 131072 for the challenge
+    uint32_t multDepth = 11;
     uint32_t scaleMod = 59;
     usint firstMod = 60;
-    uint32_t batchSize = 2048;//65536;
+    uint32_t batchSize = 2048;
 
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetScalingModSize(scaleMod);
@@ -48,15 +48,15 @@ int main() {
     parameters.SetSecretKeyDist(secretKeyDist);
     std::vector<uint32_t> levelBudget = {4, 4};
     // std::vector<uint32_t> bsgsDim = {0, 0};
-    uint32_t levelsAvailableAfterBootstrap = 30;
+    uint32_t levelsAvailableAfterBootstrap = 23;
     usint depth = levelsAvailableAfterBootstrap + multDepth;//FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist);
     parameters.SetMultiplicativeDepth(depth);
 
-    std::ofstream paramsFile("genkey_params.txt");
+    std::ofstream paramsFile("../files/genkey_params.txt");
     if (paramsFile.is_open()) {
         paramsFile << depth;
         paramsFile.close();
-        std::cout << "Multiplicative depth has been written to build/genkey_params.txt" << std::endl;
+        std::cout << "Multiplicative depth has been written to files/genkey_params.txt" << std::endl;
     } else {
         std::cerr << "Unable to open file for writing." << std::endl;
     }
@@ -126,33 +126,61 @@ int main() {
 
     double largestElement = 0;
 
-    // Seed the random number generator
-    srand(static_cast<unsigned>(time(0)));
+    std::ifstream inputFile("../files/random_input.txt");
+    if (inputFile.is_open()) {
+        double value;
+        while (inputFile >> value) {
+            input.push_back(value);
+            if (value > largestElement) {
+                largestElement = value;
+            }
+        }
+        inputFile.close();
+        std::cout << "Read " << input.size() << " values from random_input.txt." << std::endl;
+    } else {
+        std::cout << "File not found. Generating random values..." << std::endl;
 
-    for (int i = 0; i < array_limit; ++i) {
-        double randomValue = rand() % 256;  // Generate a random integer between 0 and 255
-        input.push_back(randomValue);
+        // Seed the random number generator
+        srand(static_cast<unsigned>(time(0)));
 
-        // Update largest element
-        if (randomValue > largestElement) {
-            largestElement = randomValue;
+        for (int i = 0; i < array_limit; ++i) {
+            double randomValue = rand() % 256;  // Generate a random integer between 0 and 255
+            input.push_back(randomValue);
+
+            // Update largest element
+            if (randomValue > largestElement) {
+                largestElement = randomValue;
+            }
+        }
+
+        // Write the generated values to "random_input.txt"
+        std::ofstream outputFile("../files/random_input.txt");
+        if (outputFile.is_open()) {
+            for (const auto &value : input) {
+                outputFile << value << "\n";
+            }
+            outputFile.close();
+            std::cout << "Random values written to random_input.txt." << std::endl;
+        } else {
+            std::cerr << "Unable to open random_input.txt for writing." << std::endl;
+            return 1;
         }
     }
 
-    // Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input);
-    Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input, 1, 0, nullptr, numSlots);
-    // std::cout << "Input vector: " << plaintext << std::endl;
-    Ciphertext<DCRTPoly> ciphertext = cc->Encrypt(keys.publicKey, plaintext);
-    // std::cout << "Desired Output: " << largestElement << std::endl;
-    std::ofstream desiredOutputFile("desired_output.txt");
+    // --------------------------------------------------------------------
+    std::ofstream desiredOutputFile("../files/desired_output.txt");
     if (desiredOutputFile.is_open()) {
         desiredOutputFile << largestElement;
         desiredOutputFile.close();
-        std::cout << "Desired output has been written to build/desired_output.txt" << std::endl;
+        std::cout << "Desired output has been written to files/desired_output.txt" << std::endl;
     } else {
         std::cerr << "Unable to open file for writing." << std::endl;
     }
     // --------------------------------------------------------------------
+
+    // Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input);
+    Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input, 1, 0, nullptr, numSlots);
+    Ciphertext<DCRTPoly> ciphertext = cc->Encrypt(keys.publicKey, plaintext);
 
     // // Serialize input
     if (!Serial::SerializeToFile(inputLocation, ciphertext, SerType::BINARY)) {
@@ -164,15 +192,15 @@ int main() {
 
     // --------------------------------------------------------------------
     // Choosing a higher degree yields better precision, but a longer runtime.
-    uint32_t polyDegree = 500;
+    uint32_t polyDegree = 100;
     std::vector<double> coefficients = EvalChebyshevCoefficients([](double x) -> double { return std::abs(x); }, -1, 1, polyDegree);
 
     // Writing the coefficients to a file in the desired format
-    std::ofstream outputFile("chebyshev_coefficients.txt");
+    std::ofstream outputFile("../files/chebyshev_coefficients.txt");
     if (outputFile.is_open()) {
         outputFile << "EvalChebyshevCoefficients for abs function with polyDegree: " << polyDegree << "\n";
         outputFile << "std::vector<double> coeff_abs({\n";
-        outputFile << std::fixed << std::setprecision(17);  // Set precision for floating point numbers
+        outputFile << std::fixed << std::setprecision(25);  // Set precision for floating point numbers
 
         for (size_t i = 0; i < coefficients.size(); ++i) {
             outputFile << coefficients[i];
@@ -189,7 +217,7 @@ int main() {
 
         outputFile << "});\n";
         outputFile.close();
-        std::cout << "Coefficients have been written to chebyshev_coefficients.txt" << std::endl;
+        std::cout << "Coefficients have been written to files/chebyshev_coefficients.txt" << std::endl;
     } else {
         std::cerr << "Unable to open file for writing." << std::endl;
     }

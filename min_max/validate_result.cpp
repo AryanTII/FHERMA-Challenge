@@ -79,7 +79,7 @@ int main() {
     double largestElement;
 
     // Open the file for reading
-    std::ifstream desiredInputFile("desired_output.txt");
+    std::ifstream desiredInputFile("../files/desired_output.txt");
     if (desiredInputFile.is_open()) {
         desiredInputFile >> largestElement;  // Read the value into largestElement
         desiredInputFile.close();
