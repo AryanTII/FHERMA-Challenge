@@ -28,15 +28,12 @@ int main() {
 
     // CKKS parameters
     uint32_t ring_dimension = 4096;//131072;//32768;
-    // uint32_t multDepth = 59;
+    uint32_t multDepth = 22;
     uint32_t scaleMod = 59;
     usint firstMod = 60;
     uint32_t batchSize = 2048;//65536;
-    
-    // std::vector<uint32_t> bsgsDim = {0, 0};
 
     CCParams<CryptoContextCKKSRNS> parameters;
-    // parameters.SetMultiplicativeDepth(multDepth);
     parameters.SetScalingModSize(scaleMod);
     parameters.SetFirstModSize(firstMod);
     parameters.SetBatchSize(batchSize);
@@ -50,8 +47,9 @@ int main() {
     SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
     parameters.SetSecretKeyDist(secretKeyDist);
     std::vector<uint32_t> levelBudget = {4, 4};
+    // std::vector<uint32_t> bsgsDim = {0, 0};
     uint32_t levelsAvailableAfterBootstrap = 30;
-    usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist);
+    usint depth = levelsAvailableAfterBootstrap + multDepth;//FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist);
     parameters.SetMultiplicativeDepth(depth);
 
     std::ofstream paramsFile("genkey_params.txt");
@@ -156,10 +154,6 @@ int main() {
     }
     // --------------------------------------------------------------------
 
-    // std::cout << "Level Before Bootstrapping: " << depth - ciphertext->GetLevel() << std::endl;
-    // ciphertext = cc->EvalBootstrap(ciphertext);
-    // std::cout << "Level After Bootstrapping: " << depth - ciphertext->GetLevel() << std::endl;
-
     // // Serialize input
     if (!Serial::SerializeToFile(inputLocation, ciphertext, SerType::BINARY)) {
         std::cerr << "Error serializing input file" << std::endl;
@@ -177,7 +171,7 @@ int main() {
     std::ofstream outputFile("chebyshev_coefficients.txt");
     if (outputFile.is_open()) {
         outputFile << "EvalChebyshevCoefficients for abs function with polyDegree: " << polyDegree << "\n";
-        outputFile << "std::vector<double> coeff_cheby_abs({\n";
+        outputFile << "std::vector<double> coeff_abs({\n";
         outputFile << std::fixed << std::setprecision(17);  // Set precision for floating point numbers
 
         for (size_t i = 0; i < coefficients.size(); ++i) {

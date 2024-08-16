@@ -1,8 +1,13 @@
+// max_min_ckks.h
+#ifndef MAXMINCKKS_H
+#define MAXMINCKKS_H
+
 #include "openfhe.h"
 #include "stdio.h"
 #include <cmath>
 #include <string>
 #include <vector>
+#include "globals.h"
 
 // header files needed for serialization
 #include "ciphertext-ser.h"
@@ -44,3 +49,5 @@ public:
     Ciphertext<DCRTPoly> sign(Ciphertext<DCRTPoly> m_InputC);   
     Ciphertext<DCRTPoly> cond_swap_compare(const Ciphertext<DCRTPoly>& a, const Ciphertext<DCRTPoly>& b); 
 };
+
+#endif // MAXMINCKKS_H

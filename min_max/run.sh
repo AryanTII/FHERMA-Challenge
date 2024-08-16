@@ -9,7 +9,7 @@ cleanup() {
     exit 1
 }
 
-# Set trap to catch SIGINT (Ctrl+C) and call cleanup function
+# Set trap to catch SIGINT (Ctrl+C) and SIGTSTP (Ctrl+Z) and call cleanup function
 trap cleanup SIGINT
 
 if [ ! -d "build" ]; then
