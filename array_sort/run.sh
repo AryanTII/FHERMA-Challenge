@@ -15,16 +15,23 @@ trap cleanup SIGINT
 if [ ! -d "build" ]; then
   mkdir build
 fi
+
 if [ ! -d "files" ]; then
   mkdir files
 fi
 
-rm -rf build/*
+if [ "$1" == "1" ]; then
+    rm -rf build/*
+fi
+
 cd build
-cmake ..
+
+if [ "$1" == "1" ]; then
+    cmake ..
+fi
+
 make
 
-# Check if the first argument is provided and is equal to 1
 if [ "$1" == "1" ]; then
     ./generate_keys
 fi
