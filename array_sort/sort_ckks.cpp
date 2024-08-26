@@ -140,6 +140,7 @@ Ciphertext<DCRTPoly> SortCKKS::cond_swap(Ciphertext<DCRTPoly> a, bool is_even){
 
     auto min_cipher = m_cc->EvalMult(0.5, m_cc->EvalSub(sum_cipher, abs_diff)); // 1/2 * (a+b - |a-b|)
     auto max_cipher = m_cc->EvalSub(sum_cipher, min_cipher); // (a+b) - min_cipher
+    max_cipher = m_cc->EvalRotate(max_cipher, -1);
 
     Ciphertext<DCRTPoly> result;
 
