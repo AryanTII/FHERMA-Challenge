@@ -296,7 +296,7 @@ Ciphertext<DCRTPoly> SortCKKS::cond_swap(Ciphertext<DCRTPoly> a, bool is_even){
     auto b_minus_a = m_cc->EvalSub(b, a);
     auto b_plus_a = m_cc->EvalAdd(b, a);
     auto c = sign(b_minus_a);
-
+    
     auto X = m_cc->EvalMult(0.5, m_cc->EvalSub(b_plus_a, m_cc->EvalMult(c, b_minus_a))); // ( c *(b - a) + (b + a) ) / 2
 
     auto b_ = m_cc->EvalRotate(a, -1);
@@ -316,6 +316,22 @@ Ciphertext<DCRTPoly> SortCKKS::cond_swap(Ciphertext<DCRTPoly> a, bool is_even){
         result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), m_cc->EvalMult(result, m_MaskOne));
     }
     return result;
+
+
+    // auto b = m_cc->EvalRotate(a, 1);
+    // auto a_minus_b = m_cc->EvalSub(a, b);
+    // auto a_plus_b = m_cc->EvalAdd(a, b);
+    // auto c = m_cc->EvalMult(0.5, m_cc->EvalSub(a_plus_b, m_cc->EvalChebyshevSeries(a_minus_b, coeff_abs, -1, 1))); // (a + b - |a - b|) / 2
+    // auto c_ = m_cc->EvalRotate(m_cc->EvalSub(a_plus_b, c), -1);
+    // Ciphertext<DCRTPoly> result;
+    // if (is_even == true) {
+    //     result = m_cc->EvalAdd(m_cc->EvalMult(c, m_MaskOdd), m_cc->EvalMult(c_, m_MaskEven));
+    // } else {
+    //     result = m_cc->EvalAdd(m_cc->EvalMult(c, m_MaskEven), m_cc->EvalMult(c_, m_MaskOdd));
+    //     result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), m_cc->EvalMult(result, m_MaskOne));
+    // }
+    // return result;
+
 }
 
 

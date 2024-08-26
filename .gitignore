@@ -39,3 +39,7 @@ build/
 # OpenFHE
 openfhe-development/
 openfhe-python/
+
+#
+.DS_Store
+.idea/

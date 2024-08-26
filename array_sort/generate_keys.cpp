@@ -107,13 +107,13 @@ int main() {
 
 
     // -------------------------- Dummy Bootstrap testing -------------------
-    std::cout << "Number of levels used out of 29: " << ciphertext->GetLevel() << std::endl;
+    // std::cout << "Number of levels used out of 29: " << ciphertext->GetLevel() << std::endl;
 
-    auto ciphertext1 = cc->EvalMult(ciphertext, ciphertext);
-    std::cout << "Number of levels used out of 29: " << ciphertext1->GetLevel() << std::endl;
+    // auto ciphertext1 = cc->EvalMult(ciphertext, ciphertext);
+    // std::cout << "Number of levels used out of 29: " << ciphertext1->GetLevel() << std::endl;
 
-    auto ciphertext2 = cc->EvalMult(ciphertext1, ciphertext1);
-    std::cout << "Number of levels used out of 29: " << ciphertext2->GetLevel() << std::endl;
+    // auto ciphertext2 = cc->EvalMult(ciphertext1, ciphertext1);
+    // std::cout << "Number of levels used out of 29: " << ciphertext2->GetLevel() << std::endl;
 
     // Bootstrapping
     // auto tempPolyNew = cc->EvalBootstrap(ciphertext2);

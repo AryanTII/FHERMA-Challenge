@@ -3,6 +3,7 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include "globals.h"
 
 // header files needed for serialization
 #include "ciphertext-ser.h"
