@@ -1,0 +1,26 @@
+[
+    {
+        "significant_slot_numbers": 1,
+        "runs": [
+            {
+                "input": [
+                    {
+                        "name": "array",
+                        "value": [101, 20, 33, 46, 55, 68, 7, 80]
+                    }
+                ],
+                "output": [101]
+            },
+            {
+                "input": [
+                    {
+                        "name": "array",
+                        "value": [100, 101, 102, 103, 104, 105, 106, 107]
+                    }
+                ],
+                "output": [107]
+            }
+        ],
+        "scheme": "CKKS"
+    }
+]

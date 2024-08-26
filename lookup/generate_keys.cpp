@@ -4,21 +4,23 @@
 int main() {
 
     // BGV parameters
-    uint32_t multDepth = 15;
     uint32_t plaintext_modulus = 65537;
-    uint32_t max_relin_sk_deg = 15;
+    uint32_t ring_dimension = 32768;
+    uint32_t multDepth = 19;
 
     CCParams<CryptoContextBGVRNS> parameters;
-    parameters.SetMultiplicativeDepth(multDepth);
     parameters.SetPlaintextModulus(plaintext_modulus);
-    parameters.SetMaxRelinSkDeg(max_relin_sk_deg);
+    parameters.SetMultiplicativeDepth(multDepth);
 
+    // For speed
+    parameters.SetSecurityLevel(SecurityLevel::HEStd_NotSet);
+    parameters.SetRingDim(ring_dimension);
+    
     // Generate crypto context
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
-    cc->Enable(PKESchemeFeature::PKE);
-    cc->Enable(PKESchemeFeature::FHE);
-    cc->Enable(PKESchemeFeature::LEVELEDSHE);
-    cc->Enable(PKESchemeFeature::ADVANCEDSHE);
+    cc->Enable(PKE);
+    cc->Enable(KEYSWITCH);
+    cc->Enable(LEVELEDSHE);
 
     // Generate a public/private key pair
     auto keys = cc->KeyGen();

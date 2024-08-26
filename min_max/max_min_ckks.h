@@ -1,8 +1,13 @@
+// max_min_ckks.h
+#ifndef MAXMINCKKS_H
+#define MAXMINCKKS_H
+
 #include "openfhe.h"
 #include "stdio.h"
 #include <cmath>
 #include <string>
 #include <vector>
+#include "globals.h"
 
 // header files needed for serialization
 #include "ciphertext-ser.h"
@@ -28,6 +33,8 @@ class MaxMinCKKS {
     string m_InputLocation;
     string m_OutputLocation;
     int array_limit;
+    double Norm_Value;
+    double Norm_Value_Inv;
 
 public:
     MaxMinCKKS(string ccLocation, string pubKeyLocation, string multKeyLocation,
@@ -37,13 +44,10 @@ public:
     void eval();
     void deserializeOutput();
 
-    Ciphertext<DCRTPoly> sign(Ciphertext<DCRTPoly> m_InputC);
-    Ciphertext<DCRTPoly> cond_swap(Ciphertext<DCRTPoly> m_InputC, bool is_even);
-
-    Ciphertext<DCRTPoly> compare(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB);
-    Ciphertext<DCRTPoly> round(Ciphertext<DCRTPoly> m_InputC, int len_comparison_vector, bool is_max);
-
-    vector<double> ChebyshevCoefficientsSign(int degree, double a, double b);
-    Ciphertext<DCRTPoly> compare_test(Ciphertext<DCRTPoly> m_InputA, Ciphertext<DCRTPoly> m_InputB);
-    void eval_test();
+    Ciphertext<DCRTPoly> cond_swap(const Ciphertext<DCRTPoly>& a, const Ciphertext<DCRTPoly>& b);
+    
+    Ciphertext<DCRTPoly> sign(Ciphertext<DCRTPoly> m_InputC);   
+    Ciphertext<DCRTPoly> cond_swap_compare(const Ciphertext<DCRTPoly>& a, const Ciphertext<DCRTPoly>& b); 
 };
+
+#endif // MAXMINCKKS_H

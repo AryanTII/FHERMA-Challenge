@@ -3,8 +3,6 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-
-// #include "sort_ckks.h"
 #include "max_min_ckks.h"
 
 using namespace lbcrypto;
