@@ -173,8 +173,8 @@ void SortCKKS::eval_test()
     tempPoly = cond_swap(tempPoly, true);
     std::cout << "Number of levels used: " << tempPoly->GetLevel() << std::endl;
 
-    // tempPoly = cond_swap(tempPoly, false); //Works upto here for coeff size=actual
-    // std::cout << "Number of levels used out of 29: " << tempPoly->GetLevel() << std::endl;
+    tempPoly = cond_swap(tempPoly, false); //Works upto here for coeff size=actual
+    std::cout << "Number of levels used out of 29: " << tempPoly->GetLevel() << std::endl;
 
     // De-Normalizing
     tempPoly = m_cc->EvalMult(tempPoly, Norm_Value);

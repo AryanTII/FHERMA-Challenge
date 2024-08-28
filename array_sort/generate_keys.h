@@ -3,6 +3,8 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include <cstdlib>  // for rand()
+#include <ctime>    // for time()
 
 // header files needed for serialization
 #include "ciphertext-ser.h"
