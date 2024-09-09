@@ -61,7 +61,12 @@ void SortCKKS::initCC()
     // m_cc->Enable(FHE);
 
     std::vector<uint32_t> levelBudget = {4, 4};
-    m_cc->EvalBootstrapSetup(levelBudget); //Simple Bootstrapping Setup
+    // m_cc->EvalBootstrapSetup(levelBudget); //Simple Bootstrapping Setup
+
+    vector<uint32_t> bsgsDim = {0, 0};
+    usint ringDim = m_cc->GetRingDimension();
+    usint numSlots = ringDim / 2;
+    m_cc->EvalBootstrapSetup(levelBudget, bsgsDim, numSlots); //Advanced
 
     array_limit = 8; // 2048 
     Norm_Value = 255.0;
@@ -233,22 +238,22 @@ void SortCKKS::eval()
     // auto tempPoly = m_InputC;
     // Normalizing
     auto tempPoly = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
-    cout << "Number of levels used out of 31: " << tempPoly->GetLevel() << endl;
-    cout << "Number of levels remaining: " << 31 - tempPoly->GetLevel() << endl;
+    cout << "Number of levels used out of 46: " << tempPoly->GetLevel() << endl;
+    cout << "Number of levels remaining: " << 46 - tempPoly->GetLevel() << endl;
 
     for(int iter = 0; iter < array_limit/2; iter++){
 
         tempPoly = cond_swap(tempPoly, true);
         // Bootstrapping
         tempPoly = m_cc->EvalBootstrap(tempPoly);
-        cout << "Number of levels used out of 31: " << tempPoly->GetLevel() << endl;
-        cout << "Number of levels remaining: " << 31 - tempPoly->GetLevel() << endl;
+        cout << "Number of levels used out of 46: " << tempPoly->GetLevel() << endl;
+        cout << "Number of levels remaining: " << 46 - tempPoly->GetLevel() << endl;
 
         tempPoly = cond_swap(tempPoly, false);
         // Bootstrapping
         tempPoly = m_cc->EvalBootstrap(tempPoly);
-        cout << "Number of levels used out of 31: " << tempPoly->GetLevel() << endl;
-        cout << "Number of levels remaining: " << 31 - tempPoly->GetLevel() << endl;
+        cout << "Number of levels used out of 46: " << tempPoly->GetLevel() << endl;
+        cout << "Number of levels remaining: " << 46 - tempPoly->GetLevel() << endl;
     }
 
     // De-Normalizing

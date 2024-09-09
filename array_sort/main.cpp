@@ -40,8 +40,8 @@ int main(int argc, char *argv[]) {
     SortCKKS sortCKKS(ccLocation, pubKeyLocation, multKeyLocation, rotKeyLocation, inputLocation,
                              outputLocation);
               
-    sortCKKS.eval_test(); // For testing
-    // sortCKKS.eval();
+    // sortCKKS.eval_test(); // For testing
+    sortCKKS.eval();
     sortCKKS.deserializeOutput();
 
     return 0;
