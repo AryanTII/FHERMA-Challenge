@@ -54,6 +54,12 @@ void SortCKKS::initCC()
         std::exit(1);
     }
 
+    // m_cc->Enable(PKE);
+    // m_cc->Enable(KEYSWITCH);
+    // m_cc->Enable(LEVELEDSHE);
+    // m_cc->Enable(ADVANCEDSHE);
+    // m_cc->Enable(FHE);
+
     std::vector<uint32_t> levelBudget = {4, 4};
     m_cc->EvalBootstrapSetup(levelBudget); //Simple Bootstrapping Setup
 
@@ -61,22 +67,11 @@ void SortCKKS::initCC()
     Norm_Value = 255.0;
     Norm_Value_Inv = 1.0/Norm_Value;
 
-
-
-
-    // array_limit = 8; // 2048
-    // array_limit = m_cc->GetEncodingParams()->GetBatchSize();
-    // Norm_Value = 1.0/255;
-
     // ------------- Generation of Masks ------------------------------
     std::vector<double> mask_odd(array_limit);
     std::vector<double> mask_even(array_limit);
     std::vector<double> mask_zero(array_limit);
     std::vector<double> mask_one(array_limit);
-    std::vector<double> arr_half(array_limit); // Probably std::vector<double> arr_half(array_limit, 0.5) for efficiency
-    std::vector<double> arr_one(array_limit);
-    std::vector<double> m_norm(array_limit);
-    // double input_norm = 1.0/255; 
 
     for (int i = 0; i < array_limit; ++i) 
     {
@@ -97,27 +92,17 @@ void SortCKKS::initCC()
             mask_odd[i] = 0.0;
             mask_even[i] = 1.0;
         }
-        arr_half[i] = 0.5;
-        arr_one[i] = 1;
-        // m_norm[i] = input_norm;
     }
-
 
     m_MaskOdd  = m_cc->MakeCKKSPackedPlaintext(mask_odd);  //10101...0
     m_MaskEven = m_cc->MakeCKKSPackedPlaintext(mask_even); //01010...1
     m_MaskZero = m_cc->MakeCKKSPackedPlaintext(mask_zero); //10000...1
     m_MaskOne  = m_cc->MakeCKKSPackedPlaintext(mask_one);  //01111...0
-    m_Half = m_cc->MakeCKKSPackedPlaintext(arr_half); // 0.5 0.5 0.5 ... 0.5
-    m_One = m_cc->MakeCKKSPackedPlaintext(arr_one); // 1 1 1 ... 1
-    // m_Norm = m_cc->MakeCKKSPackedPlaintext(m_norm); 
 
-    m_MaskOdd->SetLength(array_limit);
-    m_MaskEven->SetLength(array_limit);
-    m_MaskZero->SetLength(array_limit);
-    m_MaskOne->SetLength(array_limit);
-    m_Half->SetLength(array_limit);
-    m_One->SetLength(array_limit);
-    // m_Norm->SetLength(array_limit);
+    // m_MaskOdd->SetLength(array_limit);
+    // m_MaskEven->SetLength(array_limit);
+    // m_MaskZero->SetLength(array_limit);
+    // m_MaskOne->SetLength(array_limit);
 }
 
 
@@ -158,23 +143,78 @@ Ciphertext<DCRTPoly> SortCKKS::cond_swap(Ciphertext<DCRTPoly> a, bool is_even){
 
 void SortCKKS::eval_test()
 {
-    m_cc->Enable(ADVANCEDSHE);
+    // ------- Just for testing -----------
+    usint mult_depth = 0;
+    // Open the file for reading
+    std::ifstream paramsFile("../files/genkey_params_sort.txt");
+    if (paramsFile.is_open()) {
+        paramsFile >> mult_depth;
+        paramsFile.close();
+    } else {
+        std::cerr << "Unable to open file for reading." << std::endl;
+    }
+    // -------------------------------------
 
-    // auto tempPoly = m_InputC;
+
     // Normalizing
     auto tempPoly = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
+    cout << "Number of levels used out of " << mult_depth << ": " << tempPoly->GetLevel() << endl;
+    cout << "Number of levels remaining: " << mult_depth - tempPoly->GetLevel() << endl;
 
-    std::cout << "Number of levels used out of 29: " << tempPoly->GetLevel() << std::endl;
+    cout << "Start of iteration " << endl;
 
-    // // Bootstrapping
-    //  auto tempPolyNew = m_cc->EvalBootstrap(tempPoly);
-    // std::cout << "Number of levels used out of 29 (New): " << tempPolyNew->GetLevel() << std::endl;
-
+    // ------------ Iteration 1 ----------------------
     tempPoly = cond_swap(tempPoly, true);
-    std::cout << "Number of levels used: " << tempPoly->GetLevel() << std::endl;
+    // Bootstrapping
+    tempPoly = m_cc->EvalBootstrap(tempPoly);
+    cout << "Number of levels used out of " << mult_depth << ": " << tempPoly->GetLevel() << endl;
+    cout << "Number of levels remaining: " << mult_depth - tempPoly->GetLevel() << endl;
 
-    tempPoly = cond_swap(tempPoly, false); //Works upto here for coeff size=actual
-    std::cout << "Number of levels used out of 29: " << tempPoly->GetLevel() << std::endl;
+    tempPoly = cond_swap(tempPoly, false);
+    // Bootstrapping
+    tempPoly = m_cc->EvalBootstrap(tempPoly);
+    cout << "Number of levels used out of " << mult_depth << ": " << tempPoly->GetLevel() << endl;
+    cout << "Number of levels remaining: " << mult_depth - tempPoly->GetLevel() << endl;
+
+    // ------------ Iteration 2 ----------------------
+    tempPoly = cond_swap(tempPoly, true);
+    // Bootstrapping
+    tempPoly = m_cc->EvalBootstrap(tempPoly);
+    cout << "Number of levels used out of " << mult_depth << ": " << tempPoly->GetLevel() << endl;
+    cout << "Number of levels remaining: " << mult_depth - tempPoly->GetLevel() << endl;
+
+    tempPoly = cond_swap(tempPoly, false);
+    // Bootstrapping
+    tempPoly = m_cc->EvalBootstrap(tempPoly);
+    cout << "Number of levels used out of " << mult_depth << ": " << tempPoly->GetLevel() << endl;
+    cout << "Number of levels remaining: " << mult_depth - tempPoly->GetLevel() << endl;
+
+    // // ------------ Iteration 3 ----------------------
+    // tempPoly = cond_swap(tempPoly, true);
+    // // Bootstrapping
+    // tempPoly = m_cc->EvalBootstrap(tempPoly);
+    // cout << "Number of levels used out of " << mult_depth << ": " << tempPoly->GetLevel() << endl;
+    // cout << "Number of levels remaining: " << mult_depth - tempPoly->GetLevel() << endl;
+
+    // tempPoly = cond_swap(tempPoly, false);
+    // // Bootstrapping
+    // tempPoly = m_cc->EvalBootstrap(tempPoly);
+    // cout << "Number of levels used out of " << mult_depth << ": " << tempPoly->GetLevel() << endl;
+    // cout << "Number of levels remaining: " << mult_depth - tempPoly->GetLevel() << endl;
+
+    // // ------------ Iteration 4 ----------------------
+    // tempPoly = cond_swap(tempPoly, true);
+    // // Bootstrapping
+    // tempPoly = m_cc->EvalBootstrap(tempPoly);
+    // cout << "Number of levels used out of " << mult_depth << ": " << tempPoly->GetLevel() << endl;
+    // cout << "Number of levels remaining: " << mult_depth - tempPoly->GetLevel() << endl;
+
+    // tempPoly = cond_swap(tempPoly, false);
+    // // Bootstrapping
+    // tempPoly = m_cc->EvalBootstrap(tempPoly);
+    // cout << "Number of levels used out of " << mult_depth << ": " << tempPoly->GetLevel() << endl;
+    // cout << "Number of levels remaining: " << mult_depth - tempPoly->GetLevel() << endl;
+    // // ------------------------------------------------
 
     // De-Normalizing
     tempPoly = m_cc->EvalMult(tempPoly, Norm_Value);
@@ -188,14 +228,31 @@ void SortCKKS::eval_test()
 
 void SortCKKS::eval()
 {
-    m_cc->Enable(ADVANCEDSHE);
+    // m_cc->Enable(ADVANCEDSHE);
 
-    auto tempPoly = m_InputC;
+    // auto tempPoly = m_InputC;
+    // Normalizing
+    auto tempPoly = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
+    cout << "Number of levels used out of 31: " << tempPoly->GetLevel() << endl;
+    cout << "Number of levels remaining: " << 31 - tempPoly->GetLevel() << endl;
 
     for(int iter = 0; iter < array_limit/2; iter++){
+
         tempPoly = cond_swap(tempPoly, true);
+        // Bootstrapping
+        tempPoly = m_cc->EvalBootstrap(tempPoly);
+        cout << "Number of levels used out of 31: " << tempPoly->GetLevel() << endl;
+        cout << "Number of levels remaining: " << 31 - tempPoly->GetLevel() << endl;
+
         tempPoly = cond_swap(tempPoly, false);
+        // Bootstrapping
+        tempPoly = m_cc->EvalBootstrap(tempPoly);
+        cout << "Number of levels used out of 31: " << tempPoly->GetLevel() << endl;
+        cout << "Number of levels remaining: " << 31 - tempPoly->GetLevel() << endl;
     }
+
+    // De-Normalizing
+    tempPoly = m_cc->EvalMult(tempPoly, Norm_Value);
 
     // Sorted vector
     m_OutputC = tempPoly;

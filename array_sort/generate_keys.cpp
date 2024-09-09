@@ -3,31 +3,41 @@
 int main() {
 
     // CKKS parameters    
-    uint32_t multDepth = 29;
+    uint32_t ring_dimension = 4096; // 131072 for the challenge
+    // uint32_t multDepth = 11;
     uint32_t scaleMod = 59;
     usint firstMod = 60;
-    ScalingTechnique rescaleTech = FLEXIBLEAUTO; //Custom
-    // ----------- Alternate ------------------- 
-    // uint32_t scaleMod = 78;//59;
-    // usint firstMod = 89;//60;
-    // ScalingTechnique rescaleTech = FIXEDAUTO; //Custom
-    // ----------- Alternate -------------------
-    uint32_t batchSize = 65536;
-    uint32_t levelsAvailableAfterBootstrap = 10; 
-    usint depth = levelsAvailableAfterBootstrap + multDepth;
-    // vector<uint32_t> levelBudget = {4, 4};
-    vector<uint32_t> levelBudget = {2, 2};
-    vector<uint32_t> bsgsDim = {0, 0};
+    // uint32_t batchSize = 128; // 65536;
 
-    // Setup CKKS parameters
     CCParams<CryptoContextCKKSRNS> parameters;
-    parameters.SetBatchSize(batchSize);
     parameters.SetScalingModSize(scaleMod);
-    parameters.SetScalingTechnique(rescaleTech);
     parameters.SetFirstModSize(firstMod);
-    // parameters.SetMultiplicativeDepth(multDepth); //Initial
+    // parameters.SetBatchSize(batchSize);
+    ScalingTechnique rescaleTech = FLEXIBLEAUTO; // FIXEDAUTO
+    parameters.SetScalingTechnique(rescaleTech);
+
+    parameters.SetSecurityLevel(SecurityLevel::HEStd_NotSet);
+    parameters.SetRingDim(ring_dimension);
+
+    // Bootstrapping
+    SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
+    parameters.SetSecretKeyDist(secretKeyDist);
+    vector<uint32_t> levelBudget = {4, 4};
+    vector<uint32_t> bsgsDim = {0, 0};
+    uint32_t levelsAvailableAfterBootstrap = 24; 
+    // usint depth = levelsAvailableAfterBootstrap + multDepth; // FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist);
+    usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist);
     parameters.SetMultiplicativeDepth(depth);
-    
+
+    std::ofstream paramsFile("../files/genkey_params_sort.txt");
+    if (paramsFile.is_open()) {
+        paramsFile << depth;
+        paramsFile.close();
+        std::cout << "Multiplicative depth has been written to files/genkey_params_sort.txt" << std::endl;
+    } else {
+        std::cerr << "Unable to open file for writing." << std::endl;
+    }
+
     // Generate crypto context
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
     cc->Enable(PKE);
@@ -37,8 +47,7 @@ int main() {
     cc->Enable(FHE);
 
     usint ringDim = cc->GetRingDimension();
-    // This is the maximum number of slots that can be used for full packing.
-    usint numSlots = 8; //ringDim / 2;
+    usint numSlots = ringDim / 2;
     cout << "CKKS scheme is using ring dimension " << ringDim << endl << endl;
 
     // cc->EvalBootstrapSetup(levelBudget); //Simple
@@ -47,7 +56,6 @@ int main() {
     // Key generation
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
-    cc->EvalAtIndexKeyGen(keys.secretKey, {1});
     cc->EvalRotateKeyGen(keys.secretKey, {1, -1});
     cc->EvalBootstrapKeyGen(keys.secretKey, numSlots);
 
@@ -92,8 +100,8 @@ int main() {
     size_t array_limit = 8;  // Set this to your desired size
     bool new_input = false;
 
-    vector<double> desired_output(array_limit);
-    vector<double> input(array_limit);
+    vector<double> desired_output;
+    vector<double> input;
 
     ifstream desiredOutputFile("../files/desired_output_sort.txt");
     if (desiredOutputFile.is_open()) {
@@ -105,6 +113,7 @@ int main() {
         cout << "Read " << desired_output.size() << " values from desired_output_sort.txt." << endl;
     } else {
         new_input = true;
+        desired_output.resize(array_limit);
 
         // Initialize the random number generator
         srand(static_cast<unsigned>(time(0)));
@@ -114,7 +123,7 @@ int main() {
 
         // Generate subsequent elements
         for (size_t i = 1; i < array_limit; ++i) {
-            double random_increment = (static_cast<double>(rand()) / RAND_MAX) * 0.1;
+            double random_increment = (static_cast<double>(rand()) / RAND_MAX) * 0.5;
             desired_output[i] = desired_output[i - 1] + (i%2 + 1)*0.01 + random_increment;
         }
 
