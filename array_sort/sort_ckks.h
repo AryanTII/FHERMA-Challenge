@@ -22,10 +22,13 @@ class SortCKKS {
     Plaintext m_MaskOdd;
     Plaintext m_MaskEven;
     Plaintext m_MaskZero; 
-    Plaintext m_MaskOne;  
-    Plaintext m_Half;
-    Plaintext m_One;
-    Plaintext m_Norm;
+    Plaintext m_MaskOne;
+    Plaintext m_MaskOdd_half;
+    Plaintext m_MaskEven_half;
+    Plaintext m_MaskOdd_half_trunc;
+    Plaintext m_MaskEven_half_trunc;
+    Plaintext m_MaskOdd_trunc;
+    Plaintext m_MaskEven_trunc;
     string m_PubKeyLocation;
     string m_MultKeyLocation;
     string m_RotKeyLocation;

@@ -2,56 +2,49 @@
 
 
 int main() {
+    
+    // CKKS parameters
+    SecretKeyDist secretKeyDist = UNIFORM_TERNARY;
+    SecurityLevel securityLevel = SecurityLevel::HEStd_NotSet; // HEStd_128_classic
+    uint32_t ringDim = 256; // no
+    ScalingTechnique rescaleTech = FLEXIBLEAUTO; //FIXEDAUTO
+    usint firstMod = 60; // example simple-ckks-bootstrapping
 
-    // CKKS parameters    
-    uint32_t multDepth = 29;
-    uint32_t scaleMod = 59;
-    usint firstMod = 60;
-    ScalingTechnique rescaleTech = FLEXIBLEAUTO; //Custom
-    // ----------- Alternate ------------------- 
-    // uint32_t scaleMod = 78;//59;
-    // usint firstMod = 89;//60;
-    // ScalingTechnique rescaleTech = FIXEDAUTO; //Custom
-    // ----------- Alternate -------------------
-    uint32_t batchSize = 65536;
-    uint32_t levelsAvailableAfterBootstrap = 10; 
-    usint depth = levelsAvailableAfterBootstrap + multDepth;
-    // std::vector<uint32_t> levelBudget = {4, 4};
-    std::vector<uint32_t> levelBudget = {2, 2};
-    std::vector<uint32_t> bsgsDim = {0, 0};
+    // Bootstrapping parameters
+    std::vector<uint32_t> levelBudget = {4, 4};
+    uint32_t levelsAvailableAfterBootstrap = 24; 
+    usint depth = levelsAvailableAfterBootstrap + FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist);
+    // std::cout << "Bootstrapping Depth: " << FHECKKSRNS::GetBootstrapDepth(levelBudget, secretKeyDist) << std::endl;
 
-    // Setup CKKS parameters
+    // Setup
     CCParams<CryptoContextCKKSRNS> parameters;
-    parameters.SetBatchSize(batchSize);
-    parameters.SetScalingModSize(scaleMod);
+    parameters.SetSecretKeyDist(secretKeyDist);
+    parameters.SetSecurityLevel(securityLevel);
+    parameters.SetRingDim(ringDim); //no
     parameters.SetScalingTechnique(rescaleTech);
     parameters.SetFirstModSize(firstMod);
-    // parameters.SetMultiplicativeDepth(multDepth); //Initial
     parameters.SetMultiplicativeDepth(depth);
-    
+
     // Generate crypto context
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
+
     cc->Enable(PKE);
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
     cc->Enable(FHE);
 
-    usint ringDim = cc->GetRingDimension();
-    // This is the maximum number of slots that can be used for full packing.
-    usint numSlots = ringDim / 2;
+    ringDim = cc->GetRingDimension(); // if security level given instead of ring dimension
     cout << "CKKS scheme is using ring dimension " << ringDim << endl << endl;
-
-    // cc->EvalBootstrapSetup(levelBudget); //Simple
-    cc->EvalBootstrapSetup(levelBudget, bsgsDim, numSlots); //Advanced
+    usint numSlots = ringDim / 2; // maximum number of slots that can be used for full packing
+    cc->EvalBootstrapSetup(levelBudget);
 
     // Key generation
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
-    cc->EvalAtIndexKeyGen(keys.secretKey, {1});
     cc->EvalRotateKeyGen(keys.secretKey, {1, -1});
     cc->EvalBootstrapKeyGen(keys.secretKey, numSlots);
-
+    
     // Serialize into binary files
     std::cout << "Serializing Relevant Keys and Inputs!" << std::endl;
     
