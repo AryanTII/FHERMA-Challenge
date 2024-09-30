@@ -69,7 +69,7 @@ void SortCKKS::initCC()
 }
 
 
-Ciphertext<DCRTPoly> SortCKKS::cond_swap_mergesort(Ciphertext<DCRTPoly> a, int step, bool is_initial, int array_limit){
+Ciphertext<DCRTPoly> SortCKKS::cond_swap_mergesort(Ciphertext<DCRTPoly> a, int step, int section, bool is_initial, int array_limit){
     cout << "\nStep: " << step;
     auto b = m_cc->EvalRotate(a, step);
     
@@ -92,7 +92,7 @@ Ciphertext<DCRTPoly> SortCKKS::cond_swap_mergesort(Ciphertext<DCRTPoly> a, int s
     
     std::vector<double> mask1(array_limit);
     std::vector<double> mask2(array_limit);
-    if (is_initial == true) {
+    // if (is_initial == true) {
         for (int i = 0; i < array_limit; ++i) {
             if ((i / step) % 2 == 0) {
                 mask1[i] = 0.5;
@@ -102,18 +102,18 @@ Ciphertext<DCRTPoly> SortCKKS::cond_swap_mergesort(Ciphertext<DCRTPoly> a, int s
                 mask2[i] = 0.5;
             }
         }
-    }
-    else {
-        for (int i = 0; i < array_limit; ++i) {
-            if (((i / step) == 0) || ((i / step) % 2 == 1 && i < array_limit - step)) {
-                mask1[i] = 0.5;
-                mask2[i] = 0;
-            } else {
-                mask1[i] = 0;
-                mask2[i] = 0.5;
-            }
-        }
-    }
+    // }
+    // else {
+    //     for (int i = 0; i < array_limit; ++i) {
+    //         if (((i / step) == 0) || ((i / step) % 2 == 1 && i < array_limit - step)) {
+    //             mask1[i] = 0.5;
+    //             mask2[i] = 0;
+    //         } else {
+    //             mask1[i] = 0;
+    //             mask2[i] = 0.5;
+    //         }
+    //     }
+    // }
     // cout << "\nmask1: " << mask1;
     // cout << "\nmask2: " << mask2;
     auto m_Mask1 = m_cc->MakeCKKSPackedPlaintext(mask1);
@@ -121,8 +121,29 @@ Ciphertext<DCRTPoly> SortCKKS::cond_swap_mergesort(Ciphertext<DCRTPoly> a, int s
     m_Mask1->SetLength(array_limit);
     m_Mask2->SetLength(array_limit);
 
-    auto result = m_cc->EvalAdd(m_cc->EvalMult(min_by_2_cipher, m_Mask1), m_cc->EvalMult(max_by_2_cipher, m_Mask2));
-
+    Ciphertext<DCRTPoly> result;
+    if (is_initial) {
+        result = m_cc->EvalAdd(m_cc->EvalMult(min_by_2_cipher, m_Mask1), m_cc->EvalMult(max_by_2_cipher, m_Mask2));
+    } else {
+        std::vector<double> mask_res(array_limit);
+        std::vector<double> mask_a(array_limit);
+            for (int i = 0; i < array_limit; ++i) {
+                if (((i % section) < step) || (i % section) >= section - step) {
+                    mask_res[i] = 0;
+                    mask_a[i] = 1;
+                } else {
+                    mask_res[i] = 1;
+                    mask_a[i] = 0;
+                }
+            }
+        auto m_Mask_res = m_cc->MakeCKKSPackedPlaintext(mask_res);
+        auto m_Mask_a = m_cc->MakeCKKSPackedPlaintext(mask_a);
+        m_Mask_res->SetLength(array_limit);
+        m_Mask_a->SetLength(array_limit);
+        result = m_cc->EvalAdd(m_cc->EvalMult(min_by_2_cipher, m_Mask2), m_cc->EvalMult(max_by_2_cipher, m_Mask1));
+        result = m_cc->EvalAdd(m_cc->EvalMult(result, m_Mask_res), m_cc->EvalMult(a, m_Mask_a));
+    }
+        
     return result;
 }
 
@@ -147,7 +168,7 @@ void SortCKKS::eval_test()
     while(section <= array_limit){
         step = section / 2;
         time(&start);
-        tempPoly = cond_swap_mergesort(tempPoly, step, true, array_limit);
+        tempPoly = cond_swap_mergesort(tempPoly, step, section, true, array_limit);
         time(&finish);
         cout << "\ncond_swap time = " << difftime(finish, start) << " seconds";
         count = count + 1;
@@ -160,7 +181,7 @@ void SortCKKS::eval_test()
         step = step / 2;
         while(step > 0){
             time(&start2);
-            tempPoly = cond_swap_mergesort(tempPoly, step, false, array_limit);
+            tempPoly = cond_swap_mergesort(tempPoly, step, section, false, array_limit);
             time(&finish2);
             cout << "\ncond_swap time = " << difftime(finish2, start2) << " seconds";
             count = count + 1;
