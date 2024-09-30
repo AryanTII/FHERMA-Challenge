@@ -58,102 +58,20 @@ void SortCKKS::initCC()
     std::vector<uint32_t> levelBudget = {4, 4};
     m_cc->EvalBootstrapSetup(levelBudget); //Simple Bootstrapping Setup
 
-    array_limit = 8; // 128
-    Norm_Value = 127.0; // maybe a bit bigger in case there's a bit of additional error
+    array_limit = 128;
+    Norm_Value = 255.0;
     Norm_Value_Inv = 1.0/Norm_Value;
 
 
     // ------------- Generation of Masks ------------------------------
-    std::vector<double> mask_odd(array_limit);
-    std::vector<double> mask_even(array_limit);
-    std::vector<double> mask_zero(array_limit);
-    std::vector<double> mask_one(array_limit); 
-    // Probably std::vector<double> arr_half(array_limit, 0.5) for efficiency for mask_half
-    // std::vector<double> arr_one(array_limit);
-    std::vector<double> mask_odd_trunc(array_limit);
-    std::vector<double> mask_even_trunc(array_limit);
-
-    std::vector<double> mask_even_half(array_limit);
-    std::vector<double> mask_odd_half(array_limit);
-    std::vector<double> mask_even_half_trunc(array_limit);
-    std::vector<double> mask_odd_half_trunc(array_limit);
-
-
-    for (int i = 0; i < array_limit; ++i) 
-    {
-        if ( (i==0) || (i==array_limit-1)){
-            mask_zero[i] = 1;
-            mask_one[i]  = 0;
-        } else {
-            mask_zero[i] = 0;
-            mask_one[i]  = 1;
-        }
-
-        if (i % 2 == 0) {
-            mask_odd[i] = 1.0;
-            mask_even[i] = 0.0;
-            mask_odd_half[i] = 0.5;
-            mask_even_half[i] = 0.0;
-            if (i==0) {
-                mask_odd_half_trunc[i] = 0.0;
-                mask_odd_trunc[i] = 0.0;
-            } else { 
-                mask_odd_half_trunc[i] = 0.5;
-                mask_odd_trunc[i] = 1.0;
-            }
-            mask_even_half_trunc[i] = 0.0;
-            mask_even_trunc[i] = 0.0;
-        }
-        else
-        {
-            mask_odd[i] = 0.0;
-            mask_even[i] = 1.0;
-            mask_odd_half[i] = 0.0;
-            mask_even_half[i] = 0.5;
-            mask_odd_half_trunc[i] = 0.0;
-            mask_odd_trunc[i] = 0.0;
-            if (i==array_limit-1) {
-                mask_even_half_trunc[i] = 0.0;
-                mask_even_trunc[i] = 0.0;
-            } else {
-                mask_even_half_trunc[i] = 0.5;
-                mask_even_trunc[i] = 1.0;
-            }
-        }
-        // arr_one[i] = 1;
-    }
-
-
-    m_MaskOdd  = m_cc->MakeCKKSPackedPlaintext(mask_odd);  // 1 0 1 0 1 ... 0
-    m_MaskEven = m_cc->MakeCKKSPackedPlaintext(mask_even); // 0 1 0 1 0 ... 1
-    m_MaskZero = m_cc->MakeCKKSPackedPlaintext(mask_zero); // 1 0 0 0 0 ... 1
-    m_MaskOne  = m_cc->MakeCKKSPackedPlaintext(mask_one);  // 0 1 1 1 1 ... 0
-    m_MaskOdd_half  = m_cc->MakeCKKSPackedPlaintext(mask_odd_half);  // 0.5  0  0.5  0  0.5 ... 0.5  0
-    m_MaskEven_half = m_cc->MakeCKKSPackedPlaintext(mask_even_half); //  0  0.5  0  0.5  0  ...  0  0.5
-    m_MaskOdd_half_trunc  = m_cc->MakeCKKSPackedPlaintext(mask_odd_half_trunc);  // 0  0  0.5  0  0.5 ... 0.5 0
-    m_MaskEven_half_trunc = m_cc->MakeCKKSPackedPlaintext(mask_even_half_trunc); // 0 0.5  0  0.5  0  ...  0  0
-    m_MaskOdd_trunc  = m_cc->MakeCKKSPackedPlaintext(mask_odd_trunc);  // 0 0 1 0 1 ... 1 0
-    m_MaskEven_trunc = m_cc->MakeCKKSPackedPlaintext(mask_even_trunc); // 0 1 0 1 0 ... 0 0
     
 
-    m_MaskOdd->SetLength(array_limit);
-    m_MaskEven->SetLength(array_limit);
-    m_MaskZero->SetLength(array_limit);
-    m_MaskOne->SetLength(array_limit);
-    m_MaskOdd_half->SetLength(array_limit);
-    m_MaskEven_half->SetLength(array_limit);
-    m_MaskOdd_half_trunc->SetLength(array_limit);
-    m_MaskEven_half_trunc->SetLength(array_limit);
-    m_MaskOdd_trunc->SetLength(array_limit);
-    m_MaskEven_trunc->SetLength(array_limit);
 }
 
 
-
-Ciphertext<DCRTPoly> SortCKKS::cond_swap(Ciphertext<DCRTPoly> a, bool is_even){
-    bool new_version = true;
-
-    auto b = m_cc->EvalRotate(a, 1);
+Ciphertext<DCRTPoly> SortCKKS::cond_swap_mergesort(Ciphertext<DCRTPoly> a, int step, bool is_initial, int array_limit){
+    cout << "\nStep: " << step;
+    auto b = m_cc->EvalRotate(a, step);
     
     // Compute a + b
     auto sum_cipher = m_cc->EvalAdd(a, b);
@@ -166,81 +84,102 @@ Ciphertext<DCRTPoly> SortCKKS::cond_swap(Ciphertext<DCRTPoly> a, bool is_even){
     // Using pre-computed coefficients
     // coeff_abs.resize(500); // Set number of coefficients to be used
     auto abs_diff = m_cc->EvalChebyshevSeries(diff_cipher, coeff_abs, -1, 1);
+
+    auto min_by_2_cipher = m_cc->EvalSub(sum_cipher, abs_diff); // 2 * min = (a+b - |a-b|)
+    auto sum_by_2_cipher = m_cc->EvalMult(2, sum_cipher);
+    auto max_by_2_cipher = m_cc->EvalSub(sum_by_2_cipher, min_by_2_cipher); // 2 * max = 2 * (a+b) - 2 * min_cipher
+    max_by_2_cipher = m_cc->EvalRotate(max_by_2_cipher, -step);
     
-    Ciphertext<DCRTPoly> result;
-
-    if (new_version) {
-        auto min_by_2_cipher = m_cc->EvalSub(sum_cipher, abs_diff); // 2 * min = (a+b - |a-b|)
-        auto sum_by_2_cipher = m_cc->EvalMult(2, sum_cipher);
-        auto max_by_2_cipher = m_cc->EvalSub(sum_by_2_cipher, min_by_2_cipher); // 2 * max = 2 * (a+b) - 2 * min_cipher
-        max_by_2_cipher = m_cc->EvalRotate(max_by_2_cipher, -1);
-        
-        if (is_even == true) {
-            result = m_cc->EvalAdd(m_cc->EvalMult(min_by_2_cipher, m_MaskOdd_half), m_cc->EvalMult(max_by_2_cipher, m_MaskEven_half));
-        }
-        else {
-            result = m_cc->EvalAdd(m_cc->EvalMult(min_by_2_cipher, m_MaskEven_half_trunc), m_cc->EvalMult(max_by_2_cipher, m_MaskOdd_half_trunc));
-            result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), result);
-        }
-    } else {
-
-        auto min_cipher = m_cc->EvalMult(0.5, m_cc->EvalSub(sum_cipher, abs_diff)); // 1/2 * (a+b - |a-b|)
-        auto max_cipher = m_cc->EvalSub(sum_cipher, min_cipher); // (a+b) - min_cipher
-        max_cipher = m_cc->EvalRotate(max_cipher, -1);
-        
-        if (is_even == true) {
-            result = m_cc->EvalAdd(m_cc->EvalMult(min_cipher, m_MaskOdd), m_cc->EvalMult(max_cipher, m_MaskEven));
-        }
-        else {
-            result = m_cc->EvalAdd(m_cc->EvalMult(min_cipher, m_MaskEven_trunc), m_cc->EvalMult(max_cipher, m_MaskOdd_trunc));
-            result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), result);
-            // result = m_cc->EvalAdd(m_cc->EvalMult(min_cipher, m_MaskEven), m_cc->EvalMult(max_cipher, m_MaskOdd));
-            // result = m_cc->EvalAdd(m_cc->EvalMult(a, m_MaskZero), m_cc->EvalMult(result, m_MaskOne));
+    std::vector<double> mask1(array_limit);
+    std::vector<double> mask2(array_limit);
+    if (is_initial == true) {
+        for (int i = 0; i < array_limit; ++i) {
+            if ((i / step) % 2 == 0) {
+                mask1[i] = 0.5;
+                mask2[i] = 0;
+            } else {
+                mask1[i] = 0;
+                mask2[i] = 0.5;
+            }
         }
     }
+    else {
+        for (int i = 0; i < array_limit; ++i) {
+            if (((i / step) == 0) || ((i / step) % 2 == 1 && i < array_limit - step)) {
+                mask1[i] = 0.5;
+                mask2[i] = 0;
+            } else {
+                mask1[i] = 0;
+                mask2[i] = 0.5;
+            }
+        }
+    }
+    // cout << "\nmask1: " << mask1;
+    // cout << "\nmask2: " << mask2;
+    auto m_Mask1 = m_cc->MakeCKKSPackedPlaintext(mask1);
+    auto m_Mask2 = m_cc->MakeCKKSPackedPlaintext(mask2);
+    m_Mask1->SetLength(array_limit);
+    m_Mask2->SetLength(array_limit);
+
+    auto result = m_cc->EvalAdd(m_cc->EvalMult(min_by_2_cipher, m_Mask1), m_cc->EvalMult(max_by_2_cipher, m_Mask2));
 
     return result;
-
 }
-
 
 
 void SortCKKS::eval_test()
 {   
     time_t start, finish;
+    time_t start1, finish1;
+    time_t start2, finish2;
+    time_t start3, finish3;
+    time_t tot_start, tot_finish;
 
     m_cc->Enable(ADVANCEDSHE);
 
     auto tempPoly = m_cc->EvalMult(m_InputC, Norm_Value_Inv);
-    cout << "\nUsed levels: " << tempPoly->GetLevel(); // 34 - tempPoly->GetLevel();  
 
-    int num_swaps = (int)(array_limit / 2);
-    for (int idx_swap = 0; idx_swap < num_swaps; idx_swap++) {
+    time(&tot_start);
 
+    int section, step, count;
+    section = 2;
+    count = 0;
+    while(section <= array_limit){
+        step = section / 2;
         time(&start);
-        tempPoly = cond_swap(tempPoly, true);
-        // std::cout << "Number of levels used: " << tempPoly->GetLevel() << std::endl;
-        cout << "\n cond_swap(true) performed.";
-        cout << "\nUsed levels: " << tempPoly->GetLevel();
-
-        tempPoly = cond_swap(tempPoly, false); //Works upto here for coeff size=actual
-        // std::cout << "Number of levels used out of 29: " << tempPoly->GetLevel() << std::endl;
-        cout << "\n cond_swap(false) performed.";
-        cout << "\nUsed levels: " << tempPoly->GetLevel();
-        
-        if (idx_swap != 0 && idx_swap != num_swaps - 1) {
-            
-            tempPoly = m_cc->EvalBootstrap(tempPoly); 
-            cout << "\n bootstrapping performed.";
-            cout << "\nUsed levels: " << tempPoly->GetLevel();
-        }
+        tempPoly = cond_swap_mergesort(tempPoly, step, true, array_limit);
         time(&finish);
-        cout << "\nTime Iteration = " << difftime(finish, start) << " seconds";
+        cout << "\ncond_swap time = " << difftime(finish, start) << " seconds";
+        count = count + 1;
+        // if (count % 2 == 0 && (step != 1 || section != array_limit)) {
+            time(&start1);
+            tempPoly = m_cc->EvalBootstrap(tempPoly);
+            time(&finish1);
+            cout << "\nbootstrap time = " << difftime(finish1, start1) << " seconds";
+        // }
+        step = step / 2;
+        while(step > 0){
+            time(&start2);
+            tempPoly = cond_swap_mergesort(tempPoly, step, false, array_limit);
+            time(&finish2);
+            cout << "\ncond_swap time = " << difftime(finish2, start2) << " seconds";
+            count = count + 1;
+            // if (count % 2 == 0 && (step != 1 || section != array_limit)) {
+                time(&start3);
+                tempPoly = m_cc->EvalBootstrap(tempPoly);
+                time(&finish3);
+                cout << "\nbootstrap time = " << difftime(finish3, start3) << " seconds";
+            // }
+            step = step / 2;
+        }
+        section = section * 2;
     }
+    time(&tot_finish);
+    cout << "\nTotal time = " << difftime(tot_finish, tot_start) << " seconds";
 
     // De-Normalizing
     tempPoly = m_cc->EvalMult(tempPoly, Norm_Value);
-    
+
     // Sorted vector
     m_OutputC = tempPoly;
 }
@@ -254,10 +193,10 @@ void SortCKKS::eval()
 
     auto tempPoly = m_InputC;
 
-    for(int iter = 0; iter < array_limit/2; iter++){
-        tempPoly = cond_swap(tempPoly, true);
-        tempPoly = cond_swap(tempPoly, false);
-    }
+    // for(int iter = 0; iter < array_limit/2; iter++){
+    //     tempPoly = cond_swap(tempPoly, true);
+    //     tempPoly = cond_swap(tempPoly, false);
+    // }
 
     // Sorted vector
     m_OutputC = tempPoly;

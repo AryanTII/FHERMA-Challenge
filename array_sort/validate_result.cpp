@@ -67,7 +67,7 @@ int main() {
     }
 
 
-    uint32_t batchSize = 8;
+    uint32_t batchSize = 128;
     plaintextInput->SetLength(batchSize);
     plaintextOutput->SetLength(batchSize);
 

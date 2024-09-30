@@ -48,5 +48,6 @@ public:
     void deserializeOutput();
 
     Ciphertext<DCRTPoly> cond_swap(Ciphertext<DCRTPoly> m_InputC, bool is_even);
+    Ciphertext<DCRTPoly> cond_swap_mergesort(Ciphertext<DCRTPoly> m_InputC, int step, bool is_even, int array_limit);
     void eval_test(); 
 };

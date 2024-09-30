@@ -42,7 +42,7 @@ int main() {
     // Key generation
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
-    cc->EvalRotateKeyGen(keys.secretKey, {1, -1});
+    cc->EvalRotateKeyGen(keys.secretKey, {1, -1, 2, -2, 4, -4, 8, -8, 16, -16, 32, -32, 64, -64});
     cc->EvalBootstrapKeyGen(keys.secretKey, numSlots);
     
     // Serialize into binary files
@@ -84,6 +84,9 @@ int main() {
     // uint32_t batchSize = 8;
     // Input Vector
     vector<double> input = {3.0, 1.0, 4.0, 1.5, 5.0, 9.0, 2.0, 6.0};
+    for (int index = 8; index < 128; index++) {
+        input.push_back(2.0 + (double)index);
+    }  
 
     Plaintext plaintext = cc->MakeCKKSPackedPlaintext(input);
     std::cout << "Input vector: " << plaintext << std::endl;
